@@ -1,6 +1,7 @@
-use serde::Deserialize;
+use std::env;
 
-use crate::config;
+use anyhow::anyhow;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -21,12 +22,32 @@ pub struct DatabaseConfig {
 }
 
 pub fn load_config() -> anyhow::Result<AppConfig> {
-    let settings = config::Config::builder()
-        .set_default(
-            "database.url",
-            "postgres://postgres@192.168.255.201:5432/af",
-        )?
-        .set_default("database.max_connections", 10u32)?
-        .build()?;
-    Ok(settings.try_deserialize()?)
+    let server_host = env::var("SERVER_HOST").map_err(|_| anyhow!("SERVER_HOST is required"))?;
+    let server_port = env::var("SERVER_PORT")
+        .map_err(|_| anyhow!("SERVER_PORT is required"))?
+        .parse::<u16>()
+        .map_err(|err| anyhow!("SERVER_PORT must be a u16: {err}"))?;
+
+    let database_url = env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgres://postgres@192.168.255.201:5432/af".to_string());
+    let database_max_connections = env::var("DATABASE_MAX_CONNECTIONS")
+        .ok()
+        .map(|value| {
+            value
+                .parse::<u32>()
+                .map_err(|err| anyhow!("DATABASE_MAX_CONNECTIONS must be a u32: {err}"))
+        })
+        .transpose()?
+        .unwrap_or(10);
+
+    Ok(AppConfig {
+        server: ServerConfig {
+            host: server_host,
+            port: server_port,
+        },
+        database: DatabaseConfig {
+            url: database_url,
+            max_connections: database_max_connections,
+        },
+    })
 }

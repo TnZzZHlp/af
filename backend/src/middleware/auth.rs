@@ -39,10 +39,8 @@ impl axum::extract::FromRequestParts<AppState> for GatewayKeyId {
     fn from_request_parts(
         parts: &mut axum::http::request::Parts,
         _state: &AppState,
-    ) -> core::pin::Pin<
-        Box<dyn core::future::Future<Output = Result<Self, Self::Rejection>> + Send>,
-    > {
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         let id = parts.extensions.get::<GatewayKeyId>().copied();
-        Box::pin(async move { id.ok_or(StatusCode::UNAUTHORIZED) })
+        async move { id.ok_or(StatusCode::UNAUTHORIZED) }
     }
 }
