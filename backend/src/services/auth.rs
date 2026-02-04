@@ -1,0 +1,59 @@
+use axum::http::{header, HeaderMap};
+use sqlx::PgPool;
+use uuid::Uuid;
+
+use crate::db::{gateway_key_models, gateway_keys};
+
+#[derive(Debug, Clone)]
+pub struct GatewayKey {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub rate_limit_rps: Option<i32>,
+    pub rate_limit_rpm: Option<i32>,
+}
+
+pub fn extract_api_key(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .map(str::to_string)
+        .or_else(|| {
+            headers
+                .get("x-api-key")
+                .and_then(|value| value.to_str().ok())
+                .map(str::to_string)
+        })
+}
+
+pub async fn fetch_gateway_key(
+    pool: &PgPool,
+    api_key: &str,
+) -> anyhow::Result<Option<GatewayKey>> {
+    let key = match gateway_keys::fetch_gateway_key(pool, api_key).await? {
+        Some(key) => key,
+        None => return Ok(None),
+    };
+
+    Ok(Some(GatewayKey {
+        id: key.id,
+        name: key.name,
+        rate_limit_rps: key.rate_limit_rps,
+        rate_limit_rpm: key.rate_limit_rpm,
+    }))
+}
+
+pub async fn fetch_model_whitelist(
+    pool: &PgPool,
+    gateway_key_id: Uuid,
+) -> anyhow::Result<Vec<String>> {
+    gateway_key_models::fetch_model_whitelist(pool, gateway_key_id).await
+}
+
+pub async fn is_model_allowed(
+    pool: &PgPool,
+    gateway_key_id: Uuid,
+    model: &str,
+) -> anyhow::Result<bool> {
+    gateway_key_models::is_model_allowed(pool, gateway_key_id, model).await
+}
