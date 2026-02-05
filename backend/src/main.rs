@@ -26,7 +26,8 @@ async fn main() -> anyhow::Result<()> {
         .connect(&config.database.url)
         .await?;
 
-    let state = AppState { pool };
+    let http_client = reqwest::Client::new();
+    let state = AppState { pool, http_client };
     let app = router::app(state);
 
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port)

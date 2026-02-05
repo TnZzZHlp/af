@@ -1,7 +1,6 @@
 use axum::{
-    middleware as axum_middleware,
-    routing::{get, post},
-    Router,
+    Router, middleware as axum_middleware,
+    routing::post,
 };
 
 use crate::{handlers, middleware, state::AppState};
@@ -10,7 +9,10 @@ pub fn app(state: AppState) -> Router {
     let auth_routes = Router::new().route("/auth/login", post(handlers::auth::login));
 
     let protected_routes = Router::new()
-        .route("/healthz", get(handlers::health::healthz))
+        .route(
+            "/v1/chat/completions",
+            post(handlers::openai::chat_completions),
+        )
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::rate_limit::rate_limit_middleware,
