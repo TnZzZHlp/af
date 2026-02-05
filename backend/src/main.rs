@@ -26,6 +26,8 @@ async fn main() -> anyhow::Result<()> {
         .connect(&config.database.url)
         .await?;
 
+    sqlx::migrate!("./migrations").run(&pool).await?;
+
     let http_client = reqwest::Client::new();
     let openai = OpenAiService::new(pool.clone(), http_client);
     let state = AppState { pool, openai };
