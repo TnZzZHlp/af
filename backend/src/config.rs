@@ -22,9 +22,9 @@ pub struct DatabaseConfig {
 }
 
 pub fn load_config() -> anyhow::Result<AppConfig> {
-    let server_host = env::var("SERVER_HOST").map_err(|_| anyhow!("SERVER_HOST is required"))?;
+    let server_host = env::var("SERVER_HOST").unwrap_or("0.0.0.0".to_string());
     let server_port = env::var("SERVER_PORT")
-        .map_err(|_| anyhow!("SERVER_PORT is required"))?
+        .unwrap_or("30002".to_string())
         .parse::<u16>()
         .map_err(|err| anyhow!("SERVER_PORT must be a u16: {err}"))?;
 

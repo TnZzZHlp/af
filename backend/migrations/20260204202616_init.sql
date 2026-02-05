@@ -35,19 +35,18 @@ CREATE TABLE IF NOT EXISTS providers (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Provider endpoints are concrete base_url + path for a specific api_type.
+-- Provider endpoints are concrete URLs for a specific api_type.
 CREATE TABLE IF NOT EXISTS provider_endpoints (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   provider_id uuid NOT NULL REFERENCES providers(id),
   api_type api_type NOT NULL,
-  base_url text NOT NULL,
-  path text NOT NULL,
+  url text NOT NULL,
   weight integer NOT NULL DEFAULT 1 CHECK (weight > 0),
   priority integer NOT NULL DEFAULT 0,
   timeout_ms integer NOT NULL DEFAULT 60000 CHECK (timeout_ms > 0),
   enabled boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (provider_id, api_type, base_url, path)
+  UNIQUE (provider_id, api_type, url)
 );
 
 -- Speed up endpoint lookup by provider and api_type.
@@ -185,13 +184,9 @@ CREATE TABLE IF NOT EXISTS request_logs (
   endpoint text,
   status_code integer,
   latency_ms integer,
-  error_code text,
-  error_message text,
   client_ip inet,
   user_agent text,
-  request_headers jsonb,
   request_body bytea,
-  response_headers jsonb,
   response_body bytea,
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -218,12 +213,11 @@ COMMENT ON COLUMN providers.description IS 'Optional description for admin UI.';
 COMMENT ON COLUMN providers.enabled IS 'Soft enable/disable flag.';
 COMMENT ON COLUMN providers.created_at IS 'Row creation timestamp.';
 
-COMMENT ON TABLE provider_endpoints IS 'Concrete base URL + path for a provider and api_type.';
+COMMENT ON TABLE provider_endpoints IS 'Concrete URL for a provider and api_type.';
 COMMENT ON COLUMN provider_endpoints.id IS 'Primary key UUIDv7.';
 COMMENT ON COLUMN provider_endpoints.provider_id IS 'Owning provider.';
 COMMENT ON COLUMN provider_endpoints.api_type IS 'API variant for this endpoint.';
-COMMENT ON COLUMN provider_endpoints.base_url IS 'Endpoint base URL without path.';
-COMMENT ON COLUMN provider_endpoints.path IS 'Endpoint path for the api_type.';
+COMMENT ON COLUMN provider_endpoints.url IS 'Full endpoint URL including path.';
 COMMENT ON COLUMN provider_endpoints.weight IS 'Weight for load balancing.';
 COMMENT ON COLUMN provider_endpoints.priority IS 'Priority for priority-based routing.';
 COMMENT ON COLUMN provider_endpoints.timeout_ms IS 'Request timeout in milliseconds.';
@@ -303,15 +297,11 @@ COMMENT ON COLUMN request_logs.api_type IS 'API variant for this request.';
 COMMENT ON COLUMN request_logs.model IS 'Requested model string.';
 COMMENT ON COLUMN request_logs.alias IS 'Matched alias name, if any.';
 COMMENT ON COLUMN request_logs.provider IS 'Provider name used to fulfill request.';
-COMMENT ON COLUMN request_logs.endpoint IS 'Endpoint base URL or identifier.';
+COMMENT ON COLUMN request_logs.endpoint IS 'Full endpoint URL used for the request.';
 COMMENT ON COLUMN request_logs.status_code IS 'Upstream response status code.';
 COMMENT ON COLUMN request_logs.latency_ms IS 'End-to-end latency in milliseconds.';
-COMMENT ON COLUMN request_logs.error_code IS 'Error code for failures, if any.';
-COMMENT ON COLUMN request_logs.error_message IS 'Error message for failures, if any.';
 COMMENT ON COLUMN request_logs.client_ip IS 'Client IP address.';
 COMMENT ON COLUMN request_logs.user_agent IS 'Client user-agent string.';
-COMMENT ON COLUMN request_logs.request_headers IS 'Captured request headers as JSON.';
 COMMENT ON COLUMN request_logs.request_body IS 'Raw request body bytes.';
-COMMENT ON COLUMN request_logs.response_headers IS 'Captured response headers as JSON.';
 COMMENT ON COLUMN request_logs.response_body IS 'Raw response body bytes.';
 COMMENT ON COLUMN request_logs.created_at IS 'Row creation timestamp.';

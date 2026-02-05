@@ -5,7 +5,7 @@ use crate::{error::AppResult, middleware::auth::GatewayKeyId, state::AppState};
 
 pub async fn chat_completions(
     State(state): State<AppState>,
-    GatewayKeyId(gateway_key_id): GatewayKeyId,
+    gateway_key_id: GatewayKeyId,
     Json(payload): Json<Value>,
 ) -> AppResult<Response<Body>> {
     state.openai.chat_completions(gateway_key_id, payload).await

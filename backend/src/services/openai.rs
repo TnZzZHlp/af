@@ -44,7 +44,7 @@ impl OpenAiService {
             .map(str::to_string)
             .ok_or_else(|| AppError::BadRequest("model is required".to_string()))?;
 
-        let whitelist = auth::fetch_model_whitelist(&self.pool, gateway_key_id).await?;
+        let whitelist = auth::fetch_model_whitelist(&self.pool, gateway_key_id.0).await?;
         if !whitelist.is_empty() && !whitelist.iter().any(|entry| entry == &model) {
             return Err(AppError::Forbidden);
         }
@@ -71,7 +71,7 @@ impl OpenAiService {
             .and_then(Value::as_bool)
             .unwrap_or(false);
 
-        let url = join_url(&target.endpoint_base_url, &target.endpoint_path);
+        let url = target.endpoint_url.clone();
 
         let request_body =
             serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
@@ -94,7 +94,7 @@ impl OpenAiService {
                 let latency_ms = elapsed_ms(start);
                 let context = logging::RequestLogContext {
                     request_id,
-                    gateway_key_id: Some(gateway_key_id),
+                    gateway_key_id: Some(gateway_key_id.0),
                     api_type: Some(logging::ApiType::OpenAiChatCompletions),
                     model: Some(target.model_name),
                     alias: Some(model),
@@ -102,14 +102,10 @@ impl OpenAiService {
                     endpoint: Some(url),
                     status_code: None,
                     latency_ms: Some(latency_ms),
-                    error_code: None,
-                    error_message: Some(err.to_string()),
                     client_ip: None,
                     user_agent: None,
-                    request_headers: None,
                     request_body: Some(request_body),
-                    response_headers: None,
-                    response_body: None,
+                    response_body: Some(err.to_string().into_bytes()),
                 };
                 let _ = logging::record_request(&self.pool, &context).await;
                 return Err(AppError::Internal(err.into()));
@@ -152,14 +148,13 @@ impl OpenAiService {
                 .map_err(|err| AppError::Internal(err.into()))?;
 
             let pool = self.pool.clone();
-            let request_id = request_id;
             let alias = model.clone();
             let request_body = request_body.clone();
             tokio::spawn(async move {
                 let response_body = response_body_rx.await.ok();
                 let context = logging::RequestLogContext {
                     request_id,
-                    gateway_key_id: Some(gateway_key_id),
+                    gateway_key_id: Some(gateway_key_id.0),
                     api_type: Some(logging::ApiType::OpenAiChatCompletions),
                     model: Some(model_name),
                     alias: Some(alias),
@@ -167,13 +162,9 @@ impl OpenAiService {
                     endpoint: Some(endpoint),
                     status_code: Some(status.as_u16() as i32),
                     latency_ms: Some(elapsed_ms(start)),
-                    error_code: None,
-                    error_message: None,
                     client_ip: None,
                     user_agent: None,
-                    request_headers: None,
                     request_body: Some(request_body),
-                    response_headers: None,
                     response_body,
                 };
                 let _ = logging::record_request(&pool, &context).await;
@@ -196,7 +187,7 @@ impl OpenAiService {
 
             let context = logging::RequestLogContext {
                 request_id,
-                gateway_key_id: Some(gateway_key_id),
+                gateway_key_id: Some(gateway_key_id.0),
                 api_type: Some(logging::ApiType::OpenAiChatCompletions),
                 model: Some(model_name),
                 alias: Some(model),
@@ -204,13 +195,9 @@ impl OpenAiService {
                 endpoint: Some(endpoint),
                 status_code: Some(status.as_u16() as i32),
                 latency_ms: Some(elapsed_ms(start)),
-                error_code: None,
-                error_message: None,
                 client_ip: None,
                 user_agent: None,
-                request_headers: None,
                 request_body: Some(request_body),
-                response_headers: None,
                 response_body: Some(response_body),
             };
             let _ = logging::record_request(&self.pool, &context).await;
@@ -220,12 +207,6 @@ impl OpenAiService {
 
         Ok(response)
     }
-}
-
-fn join_url(base: &str, path: &str) -> String {
-    let base = base.trim_end_matches('/');
-    let path = path.trim_start_matches('/');
-    format!("{base}/{path}")
 }
 
 fn elapsed_ms(start: Instant) -> i32 {

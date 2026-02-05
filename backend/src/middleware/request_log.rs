@@ -31,13 +31,9 @@ pub async fn request_log_middleware(
         endpoint: None,
         status_code: None,
         latency_ms: None,
-        error_code: None,
-        error_message: None,
         client_ip: None,
         user_agent,
-        request_headers: None,
         request_body: None,
-        response_headers: None,
         response_body: None,
     };
 

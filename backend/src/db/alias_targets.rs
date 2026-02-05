@@ -22,8 +22,7 @@ pub struct AliasTargetDetail {
     pub provider_id: Uuid,
     pub provider_name: String,
     pub provider_endpoint_id: Uuid,
-    pub endpoint_base_url: String,
-    pub endpoint_path: String,
+    pub endpoint_url: String,
     pub endpoint_timeout_ms: i32,
     pub endpoint_weight: i32,
     pub endpoint_priority: i32,
@@ -63,7 +62,7 @@ pub async fn fetch_alias_target_details(
     api_type: &str,
 ) -> anyhow::Result<Vec<AliasTargetDetail>> {
     let rows = sqlx::query(
-        "SELECT\n            a.id AS alias_id,\n            a.name AS alias_name,\n            a.strategy AS alias_strategy,\n            at.id AS alias_target_id,\n            at.weight AS target_weight,\n            at.priority AS target_priority,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            pe.id AS provider_endpoint_id,\n            pe.base_url AS endpoint_base_url,\n            pe.path AS endpoint_path,\n            pe.timeout_ms AS endpoint_timeout_ms,\n            pe.weight AS endpoint_weight,\n            pe.priority AS endpoint_priority,\n            m.id AS model_id,\n            m.name AS model_name\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.id = at.provider_endpoint_id AND pe.enabled = true\n         JOIN providers p\n           ON p.id = pe.provider_id AND p.enabled = true\n         JOIN models m\n           ON m.id = at.model_id AND m.enabled = true\n         WHERE a.name = $1 AND a.api_type = $2 AND a.enabled = true\n         ORDER BY at.priority DESC, at.weight DESC",
+        "SELECT\n            a.id AS alias_id,\n            a.name AS alias_name,\n            a.strategy AS alias_strategy,\n            at.id AS alias_target_id,\n            at.weight AS target_weight,\n            at.priority AS target_priority,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            pe.id AS provider_endpoint_id,\n            pe.url AS endpoint_url,\n            pe.timeout_ms AS endpoint_timeout_ms,\n            pe.weight AS endpoint_weight,\n            pe.priority AS endpoint_priority,\n            m.id AS model_id,\n            m.name AS model_name\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.id = at.provider_endpoint_id AND pe.enabled = true\n         JOIN providers p\n           ON p.id = pe.provider_id AND p.enabled = true\n         JOIN models m\n           ON m.id = at.model_id AND m.enabled = true\n         WHERE a.name = $1 AND a.api_type = $2 AND a.enabled = true\n         ORDER BY at.priority DESC, at.weight DESC",
     )
     .bind(alias_name)
     .bind(api_type)
@@ -82,8 +81,7 @@ pub async fn fetch_alias_target_details(
             provider_id: row.try_get("provider_id")?,
             provider_name: row.try_get("provider_name")?,
             provider_endpoint_id: row.try_get("provider_endpoint_id")?,
-            endpoint_base_url: row.try_get("endpoint_base_url")?,
-            endpoint_path: row.try_get("endpoint_path")?,
+            endpoint_url: row.try_get("endpoint_url")?,
             endpoint_timeout_ms: row.try_get("endpoint_timeout_ms")?,
             endpoint_weight: row.try_get("endpoint_weight")?,
             endpoint_priority: row.try_get("endpoint_priority")?,
