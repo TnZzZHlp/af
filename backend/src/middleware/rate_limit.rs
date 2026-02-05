@@ -1,10 +1,7 @@
 use axum::{extract::State, http::Request, middleware::Next, response::IntoResponse};
 
 use crate::{
-    error::AppError,
-    middleware::auth::GatewayKeyId,
-    services::rate_limit,
-    state::AppState,
+    error::AppError, middleware::auth::GatewayKeyId, services::rate_limit, state::AppState,
 };
 
 pub async fn rate_limit_middleware(

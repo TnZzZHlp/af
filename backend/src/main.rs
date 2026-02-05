@@ -12,7 +12,7 @@ use std::net::SocketAddr;
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::EnvFilter;
 
-use crate::{config::load_config, state::AppState};
+use crate::{config::load_config, services::openai::OpenAiService, state::AppState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -27,7 +27,8 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     let http_client = reqwest::Client::new();
-    let state = AppState { pool, http_client };
+    let openai = OpenAiService::new(pool.clone(), http_client);
+    let state = AppState { pool, openai };
     let app = router::app(state);
 
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port)

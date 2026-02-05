@@ -1,9 +1,4 @@
-use axum::{
-    extract::State,
-    http::Request,
-    middleware::Next,
-    response::IntoResponse,
-};
+use axum::{extract::State, http::Request, middleware::Next, response::IntoResponse};
 
 use crate::{error::AppError, services::auth, state::AppState};
 use uuid::Uuid;

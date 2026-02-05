@@ -9,10 +9,7 @@ pub struct GatewayKey {
     pub rate_limit_rpm: Option<i32>,
 }
 
-pub async fn fetch_gateway_key(
-    pool: &PgPool,
-    api_key: &str,
-) -> anyhow::Result<Option<GatewayKey>> {
+pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<Option<GatewayKey>> {
     let row = sqlx::query(
         "SELECT id, name, rate_limit_rps, rate_limit_rpm\n         FROM gateway_keys\n         WHERE key = $1 AND enabled = true\n         LIMIT 1",
     )
@@ -47,5 +44,8 @@ pub async fn fetch_limits(
         return Ok((None, None));
     };
 
-    Ok((row.try_get("rate_limit_rps")?, row.try_get("rate_limit_rpm")?))
+    Ok((
+        row.try_get("rate_limit_rps")?,
+        row.try_get("rate_limit_rpm")?,
+    ))
 }

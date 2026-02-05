@@ -1,4 +1,4 @@
-use sqlx::{types::time::OffsetDateTime, PgPool, Row};
+use sqlx::{PgPool, Row, types::time::OffsetDateTime};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]

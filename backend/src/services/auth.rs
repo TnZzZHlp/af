@@ -1,4 +1,4 @@
-use axum::http::{header, HeaderMap};
+use axum::http::{HeaderMap, header};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -26,10 +26,7 @@ pub fn extract_api_key(headers: &HeaderMap) -> Option<String> {
         })
 }
 
-pub async fn fetch_gateway_key(
-    pool: &PgPool,
-    api_key: &str,
-) -> anyhow::Result<Option<GatewayKey>> {
+pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<Option<GatewayKey>> {
     let key = match gateway_keys::fetch_gateway_key(pool, api_key).await? {
         Some(key) => key,
         None => return Ok(None),

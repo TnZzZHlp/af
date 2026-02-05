@@ -1,4 +1,4 @@
-use sqlx::{types::time, PgPool, Row};
+use sqlx::{PgPool, Row, types::time};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -12,10 +12,7 @@ pub struct UserRow {
     pub created_at: time::OffsetDateTime,
 }
 
-pub async fn fetch_user_by_email(
-    pool: &PgPool,
-    email: &str,
-) -> anyhow::Result<Option<UserRow>> {
+pub async fn fetch_user_by_email(pool: &PgPool, email: &str) -> anyhow::Result<Option<UserRow>> {
     let row = sqlx::query(
         "SELECT id, email, name, password_hash, password_updated_at, enabled, created_at\n         FROM users\n         WHERE email = $1 AND enabled = true\n         LIMIT 1",
     )
