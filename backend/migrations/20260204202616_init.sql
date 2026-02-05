@@ -145,6 +145,20 @@ CREATE TABLE IF NOT EXISTS gateway_keys (
 CREATE INDEX IF NOT EXISTS idx_gateway_keys_enabled
   ON gateway_keys(enabled);
 
+-- Users are gateway administrators/operators with password auth.
+CREATE TABLE IF NOT EXISTS users (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  email text NOT NULL UNIQUE,
+  name text,
+  password_hash text NOT NULL,
+  password_updated_at timestamptz,
+  enabled boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_enabled
+  ON users(enabled);
+
 -- Exact model whitelist per gateway key.
 -- Entries are matched verbatim against request model string.
 CREATE TABLE IF NOT EXISTS gateway_key_models (
@@ -265,6 +279,15 @@ COMMENT ON COLUMN gateway_keys.enabled IS 'Soft enable/disable flag.';
 COMMENT ON COLUMN gateway_keys.rate_limit_rps IS 'Requests per second limit; NULL means unlimited.';
 COMMENT ON COLUMN gateway_keys.rate_limit_rpm IS 'Requests per minute limit; NULL means unlimited.';
 COMMENT ON COLUMN gateway_keys.created_at IS 'Row creation timestamp.';
+
+COMMENT ON TABLE users IS 'Gateway administrators/operators with password auth.';
+COMMENT ON COLUMN users.id IS 'Primary key UUIDv7.';
+COMMENT ON COLUMN users.email IS 'Unique email address.';
+COMMENT ON COLUMN users.name IS 'Optional display name.';
+COMMENT ON COLUMN users.password_hash IS 'Hashed password (argon2/bcrypt/etc).';
+COMMENT ON COLUMN users.password_updated_at IS 'Timestamp when password last changed.';
+COMMENT ON COLUMN users.enabled IS 'Soft enable/disable flag.';
+COMMENT ON COLUMN users.created_at IS 'Row creation timestamp.';
 
 COMMENT ON TABLE gateway_key_models IS 'Exact model whitelist per gateway key.';
 COMMENT ON COLUMN gateway_key_models.id IS 'Primary key UUIDv7.';

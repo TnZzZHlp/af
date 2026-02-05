@@ -1,11 +1,11 @@
 use axum::{
     extract::State,
-    http::{Request, StatusCode},
+    http::Request,
     middleware::Next,
     response::IntoResponse,
 };
 
-use crate::{services::auth, state::AppState};
+use crate::{error::AppError, services::auth, state::AppState};
 use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug)]
@@ -18,13 +18,13 @@ pub async fn auth_middleware(
 ) -> impl IntoResponse {
     let api_key = auth::extract_api_key(req.headers());
     let Some(api_key) = api_key else {
-        return StatusCode::UNAUTHORIZED.into_response();
+        return AppError::Unauthorized.into_response();
     };
 
     let gateway_key = match auth::fetch_gateway_key(&state.pool, &api_key).await {
         Ok(Some(key)) => key,
-        Ok(None) => return StatusCode::UNAUTHORIZED.into_response(),
-        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(None) => return AppError::Unauthorized.into_response(),
+        Err(err) => return AppError::Internal(err).into_response(),
     };
 
     let mut req = req;
@@ -34,13 +34,13 @@ pub async fn auth_middleware(
 }
 
 impl axum::extract::FromRequestParts<AppState> for GatewayKeyId {
-    type Rejection = StatusCode;
+    type Rejection = AppError;
 
     fn from_request_parts(
         parts: &mut axum::http::request::Parts,
         _state: &AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         let id = parts.extensions.get::<GatewayKeyId>().copied();
-        async move { id.ok_or(StatusCode::UNAUTHORIZED) }
+        async move { id.ok_or(AppError::Unauthorized) }
     }
 }
