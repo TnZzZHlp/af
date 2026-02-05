@@ -147,8 +147,7 @@ CREATE INDEX IF NOT EXISTS idx_gateway_keys_enabled
 -- Users are gateway administrators/operators with password auth.
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  email text NOT NULL UNIQUE,
-  name text,
+  username text NOT NULL UNIQUE,
   password_hash text NOT NULL,
   password_updated_at timestamptz,
   enabled boolean NOT NULL DEFAULT true,
@@ -276,8 +275,7 @@ COMMENT ON COLUMN gateway_keys.created_at IS 'Row creation timestamp.';
 
 COMMENT ON TABLE users IS 'Gateway administrators/operators with password auth.';
 COMMENT ON COLUMN users.id IS 'Primary key UUIDv7.';
-COMMENT ON COLUMN users.email IS 'Unique email address.';
-COMMENT ON COLUMN users.name IS 'Optional display name.';
+COMMENT ON COLUMN users.username IS 'Unique username.';
 COMMENT ON COLUMN users.password_hash IS 'Hashed password (argon2/bcrypt/etc).';
 COMMENT ON COLUMN users.password_updated_at IS 'Timestamp when password last changed.';
 COMMENT ON COLUMN users.enabled IS 'Soft enable/disable flag.';

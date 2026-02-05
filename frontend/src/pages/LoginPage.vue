@@ -1,0 +1,147 @@
+<script setup lang="ts">
+import { computed, reactive } from "vue"
+import { login } from "@/api/auth"
+import { ApiError } from "@/api/client"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Activity, AlertCircle, CheckCircle2, Lock, Mail, Loader2 } from "lucide-vue-next"
+
+type LoginState = {
+  username: string
+  password: string
+  loading: boolean
+  error: string | null
+  successMessage: string | null
+}
+
+const state = reactive<LoginState>({
+  username: "",
+  password: "",
+  loading: false,
+  error: null,
+  successMessage: null,
+})
+
+const canSubmit = computed(() => {
+  return !state.loading && state.username.trim().length > 0 && state.password.length > 0
+})
+
+const handleSubmit = async () => {
+  if (!canSubmit.value) {
+    return
+  }
+
+  state.loading = true
+  state.error = null
+  state.successMessage = null
+
+  try {
+    const response = await login({
+      username: state.username.trim(),
+      password: state.password,
+    })
+    const greetingName = response.name ?? response.username
+    state.successMessage = `Welcome back, ${greetingName}.`
+    state.password = ""
+  } catch (error) {
+    if (error instanceof ApiError) {
+      state.error = error.message
+    } else {
+      state.error = "Unable to sign in. Please try again."
+    }
+  } finally {
+    state.loading = false
+  }
+}
+</script>
+
+<template>
+  <div
+    class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top_left,var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200">
+    <!-- Ambient Background Elements -->
+    <div class="fixed -top-[20%] -right-[10%] w-150 h-150 rounded-full bg-blue-100/40 blur-3xl -z-10 animate-pulse">
+    </div>
+    <div
+      class="fixed -bottom-[20%] -left-[10%] w-125 h-125 rounded-full bg-emerald-50/60 blur-3xl -z-10 animate-pulse delay-1000">
+    </div>
+
+    <div class="w-full max-w-5xl grid lg:grid-cols-2 gap-12 items-center z-10">
+      <!-- Hero / Info Section -->
+      <div class="hidden lg:flex flex-col gap-6">
+        <div class="space-y-4">
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 bg-white/50 backdrop-blur text-xs font-semibold tracking-wider text-slate-600 uppercase">
+            <Activity class="w-3.5 h-3.5 text-blue-600" />
+            Gateway Console
+          </div>
+          <h1 class="text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+            Route your models <br />
+            <span class="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-emerald-600">
+              with precision.
+            </span>
+          </h1>
+          <p class="text-lg text-slate-600 leading-relaxed max-w-lg">
+            Manage keys, track usage, and keep your infrastructure tuned. Secure, centralized control for your AI
+            gateway.
+          </p>
+        </div>
+      </div>
+
+      <!-- Login Card -->
+      <Card
+        class="w-full max-w-100 mx-auto border-slate-200/60 shadow-xl shadow-slate-200/40 backdrop-blur-sm bg-white/90">
+        <CardHeader class="space-y-1">
+          <CardTitle class="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
+          <CardDescription>Enter your credentials to access your account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form @submit.prevent="handleSubmit" class="space-y-4">
+            <div class="space-y-2">
+              <Label for="username">Email address</Label>
+              <div class="relative">
+                <Mail class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="username" v-model="state.username" type="username" autocomplete="username" class="pl-9"
+                  :disabled="state.loading" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="relative">
+                <Lock class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="password" v-model="state.password" type="password" placeholder="••••••••"
+                  autocomplete="current-password" class="pl-9" :disabled="state.loading" />
+              </div>
+            </div>
+            <Button type="submit" class="w-full" :disabled="!canSubmit">
+              <Loader2 v-if="state.loading" class="mr-2 h-4 w-4 animate-spin" />
+              {{ state.loading ? 'Signing in...' : 'Sign in' }}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter class="flex flex-col gap-4">
+          <Alert v-if="state.error" variant="destructive">
+            <AlertCircle class="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{{ state.error }}</AlertDescription>
+          </Alert>
+
+          <Alert v-else-if="state.successMessage"
+            class="border-emerald-500/50 text-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-200">
+            <CheckCircle2 class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{{ state.successMessage }}</AlertDescription>
+          </Alert>
+        </CardFooter>
+      </Card>
+    </div>
+  </div>
+</template>

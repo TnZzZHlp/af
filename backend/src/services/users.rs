@@ -5,40 +5,47 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use sqlx::{PgPool, types::time};
 use uuid::Uuid;
 
-use crate::db::users;
+use crate::db::users::{self, UserRow, fetch_user_by_username};
 
 #[derive(Debug, Clone)]
 pub struct User {
     pub id: Uuid,
-    pub email: String,
-    pub name: Option<String>,
+    pub username: String,
     pub password_hash: String,
     pub password_updated_at: Option<time::OffsetDateTime>,
     pub enabled: bool,
     pub created_at: time::OffsetDateTime,
 }
 
-pub async fn create_user(
-    pool: &PgPool,
-    email: &str,
-    name: Option<&str>,
-    password: &str,
-) -> anyhow::Result<User> {
+impl From<UserRow> for User {
+    fn from(row: UserRow) -> Self {
+        User {
+            id: row.id,
+            username: row.username,
+            password_hash: row.password_hash,
+            password_updated_at: row.password_updated_at,
+            enabled: row.enabled,
+            created_at: row.created_at,
+        }
+    }
+}
+
+pub async fn create_user(pool: &PgPool, username: &str, password: &str) -> anyhow::Result<User> {
     let password_hash = hash_password(password)?;
-    insert_user(pool, email, name, &password_hash).await
+    insert_user(pool, username, &password_hash).await
 }
 
 pub async fn authenticate_user(
     pool: &PgPool,
-    email: &str,
+    username: &str,
     password: &str,
 ) -> anyhow::Result<Option<User>> {
-    let Some(user) = fetch_user_by_email(pool, email).await? else {
+    let Some(user) = fetch_user_by_username(pool, username).await? else {
         return Ok(None);
     };
 
     if verify_password(password, &user.password_hash)? {
-        Ok(Some(user))
+        Ok(Some(user.into()))
     } else {
         Ok(None)
     }
@@ -62,35 +69,16 @@ pub fn verify_password(password: &str, password_hash: &str) -> anyhow::Result<bo
         .is_ok())
 }
 
-pub async fn fetch_user_by_email(pool: &PgPool, email: &str) -> anyhow::Result<Option<User>> {
-    let row = match users::fetch_user_by_email(pool, email).await? {
-        Some(row) => row,
-        None => return Ok(None),
-    };
-
-    Ok(Some(User {
-        id: row.id,
-        email: row.email,
-        name: row.name,
-        password_hash: row.password_hash,
-        password_updated_at: row.password_updated_at,
-        enabled: row.enabled,
-        created_at: row.created_at,
-    }))
-}
-
 pub async fn insert_user(
     pool: &PgPool,
-    email: &str,
-    name: Option<&str>,
+    username: &str,
     password_hash: &str,
 ) -> anyhow::Result<User> {
-    let row = users::insert_user(pool, email, name, password_hash).await?;
+    let row = users::insert_user(pool, username, password_hash).await?;
 
     Ok(User {
         id: row.id,
-        email: row.email,
-        name: row.name,
+        username: row.username,
         password_hash: row.password_hash,
         password_updated_at: row.password_updated_at,
         enabled: row.enabled,
