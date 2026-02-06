@@ -67,8 +67,6 @@ const currentProviderId = ref<string | null>(null);
 const endpointForm = ref({
   api_type: 'openai_chat_completions' as ApiType,
   url: "",
-  weight: 1,
-  priority: 0,
   timeout_ms: 60000,
 });
 
@@ -80,7 +78,6 @@ const editingKeyId = ref<string | null>(null);
 const keyForm = ref({
   name: "",
   key: "",
-  weight: 1,
 });
 
 onMounted(() => {
@@ -142,8 +139,6 @@ function openCreateEndpointSheet(providerId: string) {
   endpointForm.value = {
     api_type: 'openai_chat_completions',
     url: "",
-    weight: 1,
-    priority: 0,
     timeout_ms: 60000,
   };
   isEndpointSheetOpen.value = true;
@@ -156,8 +151,6 @@ function openEditEndpointSheet(providerId: string, ep: ProviderEndpoint) {
   endpointForm.value = {
     api_type: ep.api_type,
     url: ep.url,
-    weight: ep.weight,
-    priority: ep.priority,
     timeout_ms: ep.timeout_ms,
   };
   isEndpointSheetOpen.value = true;
@@ -193,7 +186,6 @@ function openCreateKeySheet(providerId: string) {
   keyForm.value = {
     name: "",
     key: "",
-    weight: 1,
   };
   isKeySheetOpen.value = true;
 }
@@ -205,7 +197,6 @@ function openEditKeySheet(providerId: string, key: ProviderKey) {
   keyForm.value = {
     name: key.name || "",
     key: "", // Keys are not sent back from server for editing usually
-    weight: key.weight,
   };
   isKeySheetOpen.value = true;
 }
@@ -214,10 +205,9 @@ async function handleKeySubmit() {
   if (!currentProviderId.value) return;
 
   if (isEditingKey.value && editingKeyId.value) {
-    // Only send name and weight for updates
+    // Only send name for updates
     await store.patchKey(currentProviderId.value, editingKeyId.value, {
       name: keyForm.value.name || undefined,
-      weight: keyForm.value.weight,
     });
   } else {
     await store.addKey(currentProviderId.value, keyForm.value);
@@ -367,7 +357,6 @@ async function copyToClipboard(text: string, id: string) {
                                 <TableRow>
                                   <TableHead>Type</TableHead>
                                   <TableHead>URL</TableHead>
-                                  <TableHead>Prio/Wt</TableHead>
                                   <TableHead>Status</TableHead>
                                   <TableHead class="text-right">Actions</TableHead>
                                 </TableRow>
@@ -376,7 +365,6 @@ async function copyToClipboard(text: string, id: string) {
                                 <TableRow v-for="ep in store.endpoints[provider.id]" :key="ep.id">
                                   <TableCell class="font-medium">{{ ep.api_type.split('_').pop() }}</TableCell>
                                   <TableCell class="max-w-[120px] truncate" :title="ep.url">{{ ep.url }}</TableCell>
-                                  <TableCell>{{ ep.priority }}/{{ ep.weight }}</TableCell>
                                   <TableCell>
                                     <div class="h-2 w-2 rounded-full cursor-pointer"
                                       :class="ep.enabled ? 'bg-green-500' : 'bg-gray-400'"
@@ -396,7 +384,7 @@ async function copyToClipboard(text: string, id: string) {
                                   </TableCell>
                                 </TableRow>
                                 <TableRow v-if="!store.endpoints[provider.id]?.length">
-                                  <TableCell colspan="5" class="text-center py-6 text-muted-foreground italic">
+                                  <TableCell colspan="4" class="text-center py-6 text-muted-foreground italic">
                                     No endpoints configured
                                   </TableCell>
                                 </TableRow>
@@ -422,7 +410,6 @@ async function copyToClipboard(text: string, id: string) {
                                 <TableRow>
                                   <TableHead>Name</TableHead>
                                   <TableHead>Key</TableHead>
-                                  <TableHead>Weight</TableHead>
                                   <TableHead>Status</TableHead>
                                   <TableHead class="text-right">Actions</TableHead>
                                 </TableRow>
@@ -440,7 +427,6 @@ async function copyToClipboard(text: string, id: string) {
                                       </Button>
                                     </div>
                                   </TableCell>
-                                  <TableCell>{{ key.weight }}</TableCell>
                                   <TableCell>
                                     <div class="h-2 w-2 rounded-full cursor-pointer"
                                       :class="key.enabled ? 'bg-green-500' : 'bg-gray-400'"
@@ -460,7 +446,7 @@ async function copyToClipboard(text: string, id: string) {
                                   </TableCell>
                                 </TableRow>
                                 <TableRow v-if="!store.keys[provider.id]?.length">
-                                  <TableCell colspan="5" class="text-center py-6 text-muted-foreground italic">
+                                  <TableCell colspan="4" class="text-center py-6 text-muted-foreground italic">
                                     No keys configured
                                   </TableCell>
                                 </TableRow>
@@ -542,16 +528,6 @@ async function copyToClipboard(text: string, id: string) {
               <Label for="ep-url">URL</Label>
               <Input id="ep-url" v-model="endpointForm.url" placeholder="https://api.openai.com/v1/chat/completions" />
             </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="grid gap-2">
-                <Label for="ep-priority">Priority</Label>
-                <Input id="ep-priority" v-model="endpointForm.priority" type="number" />
-              </div>
-              <div class="grid gap-2">
-                <Label for="ep-weight">Weight</Label>
-                <Input id="ep-weight" v-model="endpointForm.weight" type="number" />
-              </div>
-            </div>
             <div class="grid gap-2">
               <Label for="ep-timeout">Timeout (ms)</Label>
               <Input id="ep-timeout" v-model="endpointForm.timeout_ms" type="number" />
@@ -588,10 +564,6 @@ async function copyToClipboard(text: string, id: string) {
             <div class="grid gap-2" v-if="!isEditingKey">
               <Label for="key-value">API Key</Label>
               <Input id="key-value" v-model="keyForm.key" type="password" />
-            </div>
-            <div class="grid gap-2">
-              <Label for="key-weight">Weight</Label>
-              <Input id="key-weight" v-model="keyForm.weight" type="number" />
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">

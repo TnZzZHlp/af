@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     error::{AppError, AppResult},
     middleware::auth::GatewayKeyId,
-    services::{auth, logging, routing},
+    services::{auth, logging, providers, routing},
 };
 
 #[derive(Clone)]
@@ -55,6 +55,8 @@ impl OpenAiService {
         let target = targets
             .pop()
             .ok_or_else(|| AppError::BadRequest(format!("unknown model alias: {model}")))?;
+
+        let _ = providers::increment_usage_count(&self.pool, target.provider_id).await;
 
         let mut provider_keys =
             routing::fetch_provider_keys(&self.pool, target.provider_id).await?;

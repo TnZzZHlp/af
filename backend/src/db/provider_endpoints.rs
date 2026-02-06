@@ -11,7 +11,6 @@ pub struct ProviderEndpointRow {
     pub provider_id: Uuid,
     pub api_type: ApiType,
     pub url: String,
-    pub usage_count: i64,
     pub timeout_ms: i32,
     pub enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
@@ -29,15 +28,13 @@ pub async fn fetch_provider_endpoints(
             provider_id,
             api_type,
             url,
-            usage_count,
             timeout_ms,
             enabled,
             created_at
          FROM provider_endpoints
          WHERE provider_id = $1
            AND api_type = $2
-           AND enabled = true
-         ORDER BY usage_count ASC",
+           AND enabled = true",
     )
     .bind(provider_id)
     .bind(api_type)
@@ -51,7 +48,6 @@ pub async fn fetch_provider_endpoints(
             provider_id: row.try_get("provider_id")?,
             api_type: row.try_get("api_type")?,
             url: row.try_get("url")?,
-            usage_count: row.try_get("usage_count")?,
             timeout_ms: row.try_get("timeout_ms")?,
             enabled: row.try_get("enabled")?,
             created_at: row.try_get("created_at")?,
@@ -64,21 +60,13 @@ pub async fn fetch_provider_endpoints(
 pub async fn list_endpoints_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
-    api_type: ApiType, // Note: The function signature didn't change in my previous read, but wait.
 ) -> anyhow::Result<Vec<ProviderEndpointRow>> {
-// Wait, I am pasting the whole function.
-// The signature in `old_string` (from read_file) was:
-// pub async fn list_endpoints_by_provider(
-//    pool: &PgPool,
-//    provider_id: Uuid,
-// )
     let rows = sqlx::query(
         "SELECT
             id,
             provider_id,
             api_type,
             url,
-            usage_count,
             timeout_ms,
             enabled,
             created_at
@@ -97,7 +85,6 @@ pub async fn list_endpoints_by_provider(
             provider_id: row.try_get("provider_id")?,
             api_type: row.try_get("api_type")?,
             url: row.try_get("url")?,
-            usage_count: row.try_get("usage_count")?,
             timeout_ms: row.try_get("timeout_ms")?,
             enabled: row.try_get("enabled")?,
             created_at: row.try_get("created_at")?,
@@ -121,7 +108,7 @@ pub async fn create_endpoint(
     let row = sqlx::query(
         "INSERT INTO provider_endpoints (provider_id, api_type, url, timeout_ms)
          VALUES ($1, $2, $3, COALESCE($4, 60000))
-         RETURNING id, provider_id, api_type, url, usage_count, timeout_ms, enabled, created_at",
+         RETURNING id, provider_id, api_type, url, timeout_ms, enabled, created_at",
     )
     .bind(params.provider_id)
     .bind(params.api_type)
@@ -135,7 +122,6 @@ pub async fn create_endpoint(
         provider_id: row.try_get("provider_id")?,
         api_type: row.try_get("api_type")?,
         url: row.try_get("url")?,
-        usage_count: row.try_get("usage_count")?,
         timeout_ms: row.try_get("timeout_ms")?,
         enabled: row.try_get("enabled")?,
         created_at: row.try_get("created_at")?,
@@ -159,7 +145,7 @@ pub async fn update_endpoint(
              timeout_ms = COALESCE($2, timeout_ms),
              enabled = COALESCE($3, enabled)
          WHERE id = $4
-         RETURNING id, provider_id, api_type, url, usage_count, timeout_ms, enabled, created_at",
+         RETURNING id, provider_id, api_type, url, timeout_ms, enabled, created_at",
     )
     .bind(params.url)
     .bind(params.timeout_ms)
@@ -177,7 +163,6 @@ pub async fn update_endpoint(
         provider_id: row.try_get("provider_id")?,
         api_type: row.try_get("api_type")?,
         url: row.try_get("url")?,
-        usage_count: row.try_get("usage_count")?,
         timeout_ms: row.try_get("timeout_ms")?,
         enabled: row.try_get("enabled")?,
         created_at: row.try_get("created_at")?,
@@ -190,12 +175,4 @@ pub async fn delete_endpoint(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
-}
-
-pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
-    sqlx::query("UPDATE provider_endpoints SET usage_count = usage_count + 1 WHERE id = $1")
-        .bind(id)
-        .execute(pool)
-        .await?;
-    Ok(())
 }

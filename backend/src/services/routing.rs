@@ -18,8 +18,6 @@ pub struct AliasTargetRow {
     pub alias_id: Uuid,
     pub provider_endpoint_id: Uuid,
     pub model_id: Uuid,
-    pub weight: i32,
-    pub priority: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -28,15 +26,12 @@ pub struct AliasTargetDetail {
     pub alias_name: String,
     pub alias_strategy: LbStrategy,
     pub alias_target_id: Uuid,
-    pub target_weight: i32,
-    pub target_priority: i32,
     pub provider_id: Uuid,
     pub provider_name: String,
+    pub provider_usage_count: i64,
     pub provider_endpoint_id: Uuid,
     pub endpoint_url: String,
     pub endpoint_timeout_ms: i32,
-    pub endpoint_weight: i32,
-    pub endpoint_priority: i32,
     pub model_id: Uuid,
     pub model_name: String,
 }
@@ -83,8 +78,6 @@ pub async fn fetch_alias_targets(
             alias_id: row.alias_id,
             provider_endpoint_id: row.provider_endpoint_id,
             model_id: row.model_id,
-            weight: row.weight,
-            priority: row.priority,
         });
     }
 
@@ -104,15 +97,12 @@ pub async fn fetch_alias_target_details(
             alias_name: row.alias_name,
             alias_strategy: row.alias_strategy,
             alias_target_id: row.alias_target_id,
-            target_weight: row.target_weight,
-            target_priority: row.target_priority,
             provider_id: row.provider_id,
             provider_name: row.provider_name,
+            provider_usage_count: row.provider_usage_count,
             provider_endpoint_id: row.provider_endpoint_id,
             endpoint_url: row.endpoint_url,
             endpoint_timeout_ms: row.endpoint_timeout_ms,
-            endpoint_weight: row.endpoint_weight,
-            endpoint_priority: row.endpoint_priority,
             model_id: row.model_id,
             model_name: row.model_name,
         });

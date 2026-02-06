@@ -15,8 +15,6 @@ export interface ProviderEndpoint {
   provider_id: string;
   api_type: ApiType;
   url: string;
-  weight: number;
-  priority: number;
   timeout_ms: number;
   enabled: boolean;
   created_at: string;
@@ -27,7 +25,6 @@ export interface ProviderKey {
   provider_id: string;
   name: string | null;
   key: string;
-  weight: number;
   enabled: boolean;
   fail_count: number;
   circuit_open_until: string | null;
@@ -54,15 +51,11 @@ export interface UpdateProviderRequest {
 export interface CreateEndpointRequest {
   api_type: ApiType;
   url: string;
-  weight?: number;
-  priority?: number;
   timeout_ms?: number;
 }
 
 export interface UpdateEndpointRequest {
   url?: string;
-  weight?: number;
-  priority?: number;
   timeout_ms?: number;
   enabled?: boolean;
 }
@@ -70,12 +63,10 @@ export interface UpdateEndpointRequest {
 export interface CreateKeyRequest {
   name?: string;
   key: string;
-  weight?: number;
 }
 
 export interface UpdateKeyRequest {
   name?: string;
-  weight?: number;
   enabled?: boolean;
 }
 

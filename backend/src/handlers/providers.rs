@@ -109,8 +109,6 @@ pub async fn list_endpoints(
 pub struct CreateEndpointRequest {
     pub api_type: ApiType,
     pub url: String,
-    pub weight: Option<i32>,
-    pub priority: Option<i32>,
     pub timeout_ms: Option<i32>,
 }
 
@@ -124,8 +122,6 @@ pub async fn create_endpoint(
         provider_id,
         payload.api_type,
         payload.url,
-        payload.weight,
-        payload.priority,
         payload.timeout_ms,
     )
     .await?;
@@ -135,8 +131,6 @@ pub async fn create_endpoint(
 #[derive(Debug, Deserialize)]
 pub struct UpdateEndpointRequest {
     pub url: Option<String>,
-    pub weight: Option<i32>,
-    pub priority: Option<i32>,
     pub timeout_ms: Option<i32>,
     pub enabled: Option<bool>,
 }
@@ -150,8 +144,6 @@ pub async fn update_endpoint(
         &state.pool,
         id,
         payload.url,
-        payload.weight,
-        payload.priority,
         payload.timeout_ms,
         payload.enabled,
     )

@@ -64,8 +64,6 @@ pub async fn create_endpoint(
     provider_id: Uuid,
     api_type: ApiType,
     url: String,
-    weight: Option<i32>,
-    priority: Option<i32>,
     timeout_ms: Option<i32>,
 ) -> anyhow::Result<ProviderEndpointRow> {
     provider_endpoints::create_endpoint(
@@ -74,8 +72,6 @@ pub async fn create_endpoint(
             provider_id,
             api_type,
             url,
-            weight,
-            priority,
             timeout_ms,
         },
     )
@@ -86,8 +82,6 @@ pub async fn update_endpoint(
     pool: &PgPool,
     id: Uuid,
     url: Option<String>,
-    weight: Option<i32>,
-    priority: Option<i32>,
     timeout_ms: Option<i32>,
     enabled: Option<bool>,
 ) -> anyhow::Result<Option<ProviderEndpointRow>> {
@@ -96,8 +90,6 @@ pub async fn update_endpoint(
         id,
         UpdateEndpointParams {
             url,
-            weight,
-            priority,
             timeout_ms,
             enabled,
         },
@@ -107,6 +99,10 @@ pub async fn update_endpoint(
 
 pub async fn delete_endpoint(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
     provider_endpoints::delete_endpoint(pool, id).await
+}
+
+pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+    providers::increment_usage_count(pool, id).await
 }
 
 // Keys
