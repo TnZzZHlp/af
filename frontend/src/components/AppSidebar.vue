@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Key,
   Blocks,
+  Route,
 } from "lucide-vue-next"
 
 import NavUser from '@/components/NavUser.vue'
@@ -45,6 +46,11 @@ const data = {
       title: "Providers",
       url: "/dashboard/providers",
       icon: Blocks,
+    },
+    {
+      title: "Aliases",
+      url: "/dashboard/aliases",
+      icon: Route,
     },
   ],
 }

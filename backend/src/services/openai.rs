@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use axum::{
     body::Body,
@@ -49,20 +49,22 @@ impl OpenAiService {
             return Err(AppError::Forbidden);
         }
 
-        let mut targets =
+        let targets =
             routing::fetch_alias_target_details(&self.pool, &model, logging::ApiType::OpenAiChatCompletions)
                 .await?;
         let target = targets
-            .pop()
+            .first()
             .ok_or_else(|| AppError::BadRequest(format!("unknown model alias: {model}")))?;
 
         let _ = providers::increment_usage_count(&self.pool, target.provider_id).await;
 
-        let mut provider_keys =
+        let provider_keys =
             routing::fetch_provider_keys(&self.pool, target.provider_id).await?;
         let provider_key = provider_keys
-            .pop()
+            .first()
             .ok_or_else(|| AppError::Internal(anyhow::anyhow!("no provider keys available")))?;
+
+        let _ = crate::db::provider_keys::increment_usage_count(&self.pool, provider_key.id).await;
 
         payload_object.insert(
             "model".to_string(),
@@ -73,7 +75,8 @@ impl OpenAiService {
             .and_then(Value::as_bool)
             .unwrap_or(false);
 
-        let url = target.endpoint_url.clone();
+        let url = target.endpoint_url.clone()
+            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("no endpoint url found for target provider")))?;
 
         let request_body =
             serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
@@ -85,7 +88,6 @@ impl OpenAiService {
                 format!("Bearer {}", provider_key.key),
             )
             .header(header::CONTENT_TYPE, "application/json")
-            .timeout(Duration::from_millis(target.endpoint_timeout_ms as u64))
             .body(request_body.clone())
             .send()
             .await;
@@ -98,9 +100,9 @@ impl OpenAiService {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
                     api_type: Some(logging::ApiType::OpenAiChatCompletions),
-                    model: Some(target.model_name),
+                    model: Some(target.model_name.clone()),
                     alias: Some(model),
-                    provider: Some(target.provider_name),
+                    provider: Some(target.provider_name.clone()),
                     endpoint: Some(url),
                     status_code: None,
                     latency_ms: Some(latency_ms),

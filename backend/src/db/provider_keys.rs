@@ -10,6 +10,7 @@ pub struct ProviderKeyRow {
     pub name: Option<String>,
     pub key: String,
     pub weight: i32,
+    pub usage_count: i64,
     pub enabled: bool,
     pub fail_count: i32,
     #[serde(with = "time::serde::rfc3339::option")]
@@ -31,6 +32,7 @@ pub async fn fetch_provider_keys(
             name,
             key,
             weight,
+            usage_count,
             enabled,
             fail_count,
             circuit_open_until,
@@ -40,7 +42,7 @@ pub async fn fetch_provider_keys(
          WHERE provider_id = $1
            AND enabled = true
            AND (circuit_open_until IS NULL OR circuit_open_until <= now())
-         ORDER BY weight DESC, created_at ASC",
+         ORDER BY usage_count ASC",
     )
     .bind(provider_id)
     .fetch_all(pool)
@@ -54,6 +56,7 @@ pub async fn fetch_provider_keys(
             name: row.try_get("name")?,
             key: row.try_get("key")?,
             weight: row.try_get("weight")?,
+            usage_count: row.try_get("usage_count")?,
             enabled: row.try_get("enabled")?,
             fail_count: row.try_get("fail_count")?,
             circuit_open_until: row.try_get("circuit_open_until")?,
@@ -76,6 +79,7 @@ pub async fn list_keys_by_provider(
             name,
             key,
             weight,
+            usage_count,
             enabled,
             fail_count,
             circuit_open_until,
@@ -97,6 +101,7 @@ pub async fn list_keys_by_provider(
             name: row.try_get("name")?,
             key: row.try_get("key")?,
             weight: row.try_get("weight")?,
+            usage_count: row.try_get("usage_count")?,
             enabled: row.try_get("enabled")?,
             fail_count: row.try_get("fail_count")?,
             circuit_open_until: row.try_get("circuit_open_until")?,
@@ -119,7 +124,7 @@ pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Resul
     let row = sqlx::query(
         "INSERT INTO provider_keys (provider_id, name, key, weight)
          VALUES ($1, $2, $3, COALESCE($4, 1))
-         RETURNING id, provider_id, name, key, weight, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
+         RETURNING id, provider_id, name, key, weight, usage_count, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
     )
     .bind(params.provider_id)
     .bind(params.name)
@@ -134,6 +139,7 @@ pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Resul
         name: row.try_get("name")?,
         key: row.try_get("key")?,
         weight: row.try_get("weight")?,
+        usage_count: row.try_get("usage_count")?,
         enabled: row.try_get("enabled")?,
         fail_count: row.try_get("fail_count")?,
         circuit_open_until: row.try_get("circuit_open_until")?,
@@ -159,7 +165,7 @@ pub async fn update_key(
              weight = COALESCE($2, weight),
              enabled = COALESCE($3, enabled)
          WHERE id = $4
-         RETURNING id, provider_id, name, key, weight, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
+         RETURNING id, provider_id, name, key, weight, usage_count, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
     )
     .bind(params.name)
     .bind(params.weight)
@@ -178,6 +184,7 @@ pub async fn update_key(
         name: row.try_get("name")?,
         key: row.try_get("key")?,
         weight: row.try_get("weight")?,
+        usage_count: row.try_get("usage_count")?,
         enabled: row.try_get("enabled")?,
         fail_count: row.try_get("fail_count")?,
         circuit_open_until: row.try_get("circuit_open_until")?,
@@ -192,4 +199,12 @@ pub async fn delete_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
+}
+
+pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+    sqlx::query("UPDATE provider_keys SET usage_count = usage_count + 1 WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
 }

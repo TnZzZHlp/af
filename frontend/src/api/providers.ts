@@ -15,7 +15,6 @@ export interface ProviderEndpoint {
   provider_id: string;
   api_type: ApiType;
   url: string;
-  timeout_ms: number;
   enabled: boolean;
   created_at: string;
 }
@@ -29,6 +28,15 @@ export interface ProviderKey {
   fail_count: number;
   circuit_open_until: string | null;
   last_fail_at: string | null;
+  created_at: string;
+}
+
+export interface ProviderModel {
+  id: string;
+  provider_id: string;
+  api_type: ApiType;
+  name: string;
+  enabled: boolean;
   created_at: string;
 }
 
@@ -51,12 +59,10 @@ export interface UpdateProviderRequest {
 export interface CreateEndpointRequest {
   api_type: ApiType;
   url: string;
-  timeout_ms?: number;
 }
 
 export interface UpdateEndpointRequest {
   url?: string;
-  timeout_ms?: number;
   enabled?: boolean;
 }
 
@@ -66,6 +72,16 @@ export interface CreateKeyRequest {
 }
 
 export interface UpdateKeyRequest {
+  name?: string;
+  enabled?: boolean;
+}
+
+export interface CreateModelRequest {
+  api_type: ApiType;
+  name: string;
+}
+
+export interface UpdateModelRequest {
   name?: string;
   enabled?: boolean;
 }
@@ -150,6 +166,31 @@ export async function updateKey(providerId: string, keyId: string, payload: Upda
 
 export async function deleteKey(providerId: string, keyId: string): Promise<void> {
   await requestJson<void>(`/providers/${providerId}/keys/${keyId}`, {
+    method: "DELETE",
+  });
+}
+
+// Model API
+export async function listModels(providerId: string): Promise<ProviderModel[]> {
+  return requestJson<ProviderModel[]>(`/providers/${providerId}/models`);
+}
+
+export async function createModel(providerId: string, payload: CreateModelRequest): Promise<ProviderModel> {
+  return requestJson<ProviderModel>(`/providers/${providerId}/models`, {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateModel(providerId: string, modelId: string, payload: UpdateModelRequest): Promise<ProviderModel> {
+  return requestJson<ProviderModel>(`/providers/${providerId}/models/${modelId}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export async function deleteModel(providerId: string, modelId: string): Promise<void> {
+  await requestJson<void>(`/providers/${providerId}/models/${modelId}`, {
     method: "DELETE",
   });
 }

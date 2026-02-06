@@ -1,3 +1,4 @@
+pub mod aliases;
 pub mod auth;
 pub mod gateway_keys;
 pub mod openai;

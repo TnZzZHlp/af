@@ -67,7 +67,6 @@ const currentProviderId = ref<string | null>(null);
 const endpointForm = ref({
   api_type: 'openai_chat_completions' as ApiType,
   url: "",
-  timeout_ms: 60000,
 });
 
 // Key State
@@ -139,7 +138,6 @@ function openCreateEndpointSheet(providerId: string) {
   endpointForm.value = {
     api_type: 'openai_chat_completions',
     url: "",
-    timeout_ms: 60000,
   };
   isEndpointSheetOpen.value = true;
 }
@@ -151,7 +149,6 @@ function openEditEndpointSheet(providerId: string, ep: ProviderEndpoint) {
   endpointForm.value = {
     api_type: ep.api_type,
     url: ep.url,
-    timeout_ms: ep.timeout_ms,
   };
   isEndpointSheetOpen.value = true;
 }
@@ -273,7 +270,7 @@ async function copyToClipboard(text: string, id: string) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead class="w-[30px]"></TableHead>
+            <TableHead class="w-7.5"></TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Status</TableHead>
@@ -364,7 +361,7 @@ async function copyToClipboard(text: string, id: string) {
                               <TableBody>
                                 <TableRow v-for="ep in store.endpoints[provider.id]" :key="ep.id">
                                   <TableCell class="font-medium">{{ ep.api_type.split('_').pop() }}</TableCell>
-                                  <TableCell class="max-w-[120px] truncate" :title="ep.url">{{ ep.url }}</TableCell>
+                                  <TableCell class="max-w-30 truncate" :title="ep.url">{{ ep.url }}</TableCell>
                                   <TableCell>
                                     <div class="h-2 w-2 rounded-full cursor-pointer"
                                       :class="ep.enabled ? 'bg-green-500' : 'bg-gray-400'"
@@ -527,10 +524,6 @@ async function copyToClipboard(text: string, id: string) {
             <div class="grid gap-2">
               <Label for="ep-url">URL</Label>
               <Input id="ep-url" v-model="endpointForm.url" placeholder="https://api.openai.com/v1/chat/completions" />
-            </div>
-            <div class="grid gap-2">
-              <Label for="ep-timeout">Timeout (ms)</Label>
-              <Input id="ep-timeout" v-model="endpointForm.timeout_ms" type="number" />
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">

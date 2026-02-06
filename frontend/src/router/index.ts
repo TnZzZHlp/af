@@ -28,6 +28,11 @@ const router = createRouter({
           name: "providers",
           component: () => import("@/pages/ProvidersPage.vue"),
         },
+        {
+          path: "aliases",
+          name: "aliases",
+          component: () => import("@/pages/AliasesPage.vue"),
+        },
       ],
     },
   ],

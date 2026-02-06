@@ -11,7 +11,6 @@ pub struct ProviderEndpointRow {
     pub provider_id: Uuid,
     pub api_type: ApiType,
     pub url: String,
-    pub timeout_ms: i32,
     pub enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -28,7 +27,6 @@ pub async fn fetch_provider_endpoints(
             provider_id,
             api_type,
             url,
-            timeout_ms,
             enabled,
             created_at
          FROM provider_endpoints
@@ -48,7 +46,6 @@ pub async fn fetch_provider_endpoints(
             provider_id: row.try_get("provider_id")?,
             api_type: row.try_get("api_type")?,
             url: row.try_get("url")?,
-            timeout_ms: row.try_get("timeout_ms")?,
             enabled: row.try_get("enabled")?,
             created_at: row.try_get("created_at")?,
         });
@@ -67,7 +64,6 @@ pub async fn list_endpoints_by_provider(
             provider_id,
             api_type,
             url,
-            timeout_ms,
             enabled,
             created_at
          FROM provider_endpoints
@@ -85,7 +81,6 @@ pub async fn list_endpoints_by_provider(
             provider_id: row.try_get("provider_id")?,
             api_type: row.try_get("api_type")?,
             url: row.try_get("url")?,
-            timeout_ms: row.try_get("timeout_ms")?,
             enabled: row.try_get("enabled")?,
             created_at: row.try_get("created_at")?,
         });
@@ -98,7 +93,6 @@ pub struct CreateEndpointParams {
     pub provider_id: Uuid,
     pub api_type: ApiType,
     pub url: String,
-    pub timeout_ms: Option<i32>,
 }
 
 pub async fn create_endpoint(
@@ -106,14 +100,13 @@ pub async fn create_endpoint(
     params: CreateEndpointParams,
 ) -> anyhow::Result<ProviderEndpointRow> {
     let row = sqlx::query(
-        "INSERT INTO provider_endpoints (provider_id, api_type, url, timeout_ms)
-         VALUES ($1, $2, $3, COALESCE($4, 60000))
-         RETURNING id, provider_id, api_type, url, timeout_ms, enabled, created_at",
+        "INSERT INTO provider_endpoints (provider_id, api_type, url)
+         VALUES ($1, $2, $3)
+         RETURNING id, provider_id, api_type, url, enabled, created_at",
     )
     .bind(params.provider_id)
     .bind(params.api_type)
     .bind(params.url)
-    .bind(params.timeout_ms)
     .fetch_one(pool)
     .await?;
 
@@ -122,7 +115,6 @@ pub async fn create_endpoint(
         provider_id: row.try_get("provider_id")?,
         api_type: row.try_get("api_type")?,
         url: row.try_get("url")?,
-        timeout_ms: row.try_get("timeout_ms")?,
         enabled: row.try_get("enabled")?,
         created_at: row.try_get("created_at")?,
     })
@@ -130,7 +122,6 @@ pub async fn create_endpoint(
 
 pub struct UpdateEndpointParams {
     pub url: Option<String>,
-    pub timeout_ms: Option<i32>,
     pub enabled: Option<bool>,
 }
 
@@ -142,13 +133,11 @@ pub async fn update_endpoint(
     let row = sqlx::query(
         "UPDATE provider_endpoints
          SET url = COALESCE($1, url),
-             timeout_ms = COALESCE($2, timeout_ms),
-             enabled = COALESCE($3, enabled)
-         WHERE id = $4
-         RETURNING id, provider_id, api_type, url, timeout_ms, enabled, created_at",
+             enabled = COALESCE($2, enabled)
+         WHERE id = $3
+         RETURNING id, provider_id, api_type, url, enabled, created_at",
     )
     .bind(params.url)
-    .bind(params.timeout_ms)
     .bind(params.enabled)
     .bind(id)
     .fetch_optional(pool)
@@ -163,7 +152,6 @@ pub async fn update_endpoint(
         provider_id: row.try_get("provider_id")?,
         api_type: row.try_get("api_type")?,
         url: row.try_get("url")?,
-        timeout_ms: row.try_get("timeout_ms")?,
         enabled: row.try_get("enabled")?,
         created_at: row.try_get("created_at")?,
     }))

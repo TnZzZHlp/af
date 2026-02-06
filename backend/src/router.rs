@@ -52,6 +52,46 @@ pub fn app(state: AppState) -> Router {
         .route(
             "/providers/{id}/keys/{key_id}",
             delete(handlers::providers::delete_key),
+        )
+        .route("/providers/{id}/models", get(handlers::providers::list_models))
+        .route(
+            "/providers/{id}/models",
+            post(handlers::providers::create_model),
+        )
+        .route(
+            "/providers/{id}/models/{model_id}",
+            put(handlers::providers::update_model),
+        )
+        .route(
+            "/providers/{id}/models/{model_id}",
+            delete(handlers::providers::delete_model),
+        );
+
+    let alias_routes = Router::new()
+        .route("/aliases", get(handlers::aliases::list_aliases))
+        .route("/aliases", post(handlers::aliases::create_alias))
+        .route("/aliases/{id}", get(handlers::aliases::get_alias))
+        .route("/aliases/{id}", put(handlers::aliases::update_alias))
+        .route("/aliases/{id}", delete(handlers::aliases::delete_alias))
+        .route(
+            "/aliases/{id}/targets",
+            get(handlers::aliases::list_alias_targets),
+        )
+        .route(
+            "/aliases/{id}/targets/details",
+            get(handlers::aliases::list_alias_target_details),
+        )
+        .route(
+            "/aliases/{id}/targets",
+            post(handlers::aliases::create_alias_target),
+        )
+        .route(
+            "/aliases/{id}/targets/{target_id}",
+            put(handlers::aliases::update_alias_target),
+        )
+        .route(
+            "/aliases/{id}/targets/{target_id}",
+            delete(handlers::aliases::delete_alias_target),
         );
 
     let protected_routes = Router::new()
@@ -77,6 +117,7 @@ pub fn app(state: AppState) -> Router {
                     Router::new()
                         .merge(gateway_key_routes)
                         .merge(provider_routes)
+                        .merge(alias_routes)
                         .layer(axum_middleware::from_fn_with_state(
                             state.clone(),
                             middleware::admin_auth::admin_auth_middleware,
