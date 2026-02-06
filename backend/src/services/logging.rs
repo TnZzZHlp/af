@@ -2,13 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::db::request_logs;
-
-#[derive(Debug, Clone, Copy)]
-pub enum ApiType {
-    OpenAiChatCompletions,
-    OpenAiResponses,
-    AnthropicMessages,
-}
+pub use crate::db::types::ApiType;
 
 pub struct RequestLogContext {
     pub request_id: Uuid,
@@ -29,7 +23,7 @@ pub struct RequestLogContext {
 pub struct RequestLogInsert {
     pub request_id: Uuid,
     pub gateway_key_id: Option<Uuid>,
-    pub api_type: request_logs::ApiType,
+    pub api_type: ApiType,
     pub model: Option<String>,
     pub alias: Option<String>,
     pub provider: Option<String>,
@@ -50,11 +44,7 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
     let db_context = request_logs::RequestLogContext {
         request_id: context.request_id,
         gateway_key_id: context.gateway_key_id,
-        api_type: Some(match api_type {
-            ApiType::OpenAiChatCompletions => request_logs::ApiType::OpenAiChatCompletions,
-            ApiType::OpenAiResponses => request_logs::ApiType::OpenAiResponses,
-            ApiType::AnthropicMessages => request_logs::ApiType::AnthropicMessages,
-        }),
+        api_type: Some(api_type),
         model: context.model.clone(),
         alias: context.alias.clone(),
         provider: context.provider.clone(),

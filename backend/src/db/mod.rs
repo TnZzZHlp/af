@@ -7,4 +7,5 @@ pub mod provider_endpoints;
 pub mod provider_keys;
 pub mod providers;
 pub mod request_logs;
+pub mod types;
 pub mod users;

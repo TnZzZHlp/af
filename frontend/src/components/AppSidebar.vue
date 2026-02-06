@@ -1,59 +1,79 @@
 <script setup lang="ts">
+import type { SidebarProps } from '@/components/ui/sidebar'
+
+import {
+  Command,
+  LayoutDashboard,
+  Key,
+  Blocks,
+} from "lucide-vue-next"
+
+import NavUser from '@/components/NavUser.vue'
+import NavMain from '@/components/NavMain.vue'
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
+  SidebarFooter,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { Calendar, Home, Inbox, Settings } from "lucide-vue-next"
+} from '@/components/ui/sidebar'
 
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "/dashboard",
-    icon: Home,
+const props = withDefaults(defineProps<SidebarProps>(), {
+  variant: "inset",
+})
+
+const data = {
+  user: {
+    name: "Admin",
+    email: "admin@example.com",
+    avatar: "",
   },
-  {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
-]
+  navMain: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Gateway Keys",
+      url: "/dashboard/gateway-keys",
+      icon: Key,
+    },
+    {
+      title: "Providers",
+      url: "/dashboard/providers",
+      icon: Blocks,
+    },
+  ],
+}
 </script>
 
 <template>
-  <Sidebar collapsible="offcanvas">
+  <Sidebar v-bind="props">
+    <SidebarHeader>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" as-child>
+            <router-link to="/dashboard">
+              <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Command class="size-4" />
+              </div>
+              <div class="grid flex-1 text-left text-sm leading-tight">
+                <span class="truncate font-medium">AI Gateway</span>
+                <span class="truncate text-xs">Admin Console</span>
+              </div>
+            </router-link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarHeader>
     <SidebarContent>
-      <SidebarGroup>
-        <SidebarGroupLabel>Application</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem v-for="item in items" :key="item.title">
-              <SidebarMenuButton asChild>
-                <a :href="item.url">
-                  <component :is="item.icon" />
-                  <span>{{ item.title }}</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <NavMain :items="data.navMain" />
     </SidebarContent>
+    <SidebarFooter>
+      <NavUser :user="data.user" />
+    </SidebarFooter>
   </Sidebar>
 </template>

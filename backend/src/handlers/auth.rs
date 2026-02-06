@@ -13,6 +13,7 @@ pub struct LoginRequest {
 pub struct LoginResponse {
     pub id: String,
     pub username: String,
+    pub token: String,
 }
 
 pub async fn login(
@@ -23,9 +24,13 @@ pub async fn login(
         .await?
         .ok_or(crate::error::AppError::Unauthorized)?;
 
+    let token = crate::services::auth::create_jwt(user.id, &state.jwt_secret)
+        .map_err(crate::error::AppError::Internal)?;
+
     let response = LoginResponse {
         id: user.id.to_string(),
         username: user.username,
+        token,
     };
 
     Ok(Json(response))

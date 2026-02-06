@@ -1,14 +1,15 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::db::types::{ApiType, LbStrategy};
 use crate::db::{alias_targets, aliases, provider_keys};
 
 #[derive(Debug, Clone)]
 pub struct AliasRow {
     pub id: Uuid,
     pub name: String,
-    pub api_type: String,
-    pub strategy: String,
+    pub api_type: ApiType,
+    pub strategy: LbStrategy,
 }
 
 #[derive(Debug, Clone)]
@@ -25,7 +26,7 @@ pub struct AliasTargetRow {
 pub struct AliasTargetDetail {
     pub alias_id: Uuid,
     pub alias_name: String,
-    pub alias_strategy: String,
+    pub alias_strategy: LbStrategy,
     pub alias_target_id: Uuid,
     pub target_weight: i32,
     pub target_priority: i32,
@@ -55,7 +56,7 @@ pub struct ProviderKeyRow {
 pub async fn fetch_alias(
     pool: &PgPool,
     name: &str,
-    api_type: &str,
+    api_type: ApiType,
 ) -> anyhow::Result<Option<AliasRow>> {
     let row = match aliases::fetch_alias(pool, name, api_type).await? {
         Some(row) => row,
@@ -93,7 +94,7 @@ pub async fn fetch_alias_targets(
 pub async fn fetch_alias_target_details(
     pool: &PgPool,
     alias_name: &str,
-    api_type: &str,
+    api_type: ApiType,
 ) -> anyhow::Result<Vec<AliasTargetDetail>> {
     let rows = alias_targets::fetch_alias_target_details(pool, alias_name, api_type).await?;
     let mut details = Vec::with_capacity(rows.len());

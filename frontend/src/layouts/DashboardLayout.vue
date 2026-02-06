@@ -2,7 +2,18 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
 import AppSidebar from "@/components/AppSidebar.vue"
 import { Separator } from "@/components/ui/separator"
-import { RouterView } from "vue-router"
+import { RouterView, useRoute } from "vue-router"
+import { computed } from "vue"
+
+const route = useRoute()
+const pageTitle = computed(() => {
+  switch (route.name) {
+    case 'dashboard': return 'Overview'
+    case 'gateway-keys': return 'Gateway API Keys'
+    case 'providers': return 'Providers'
+    default: return 'Dashboard'
+  }
+})
 </script>
 
 <template>
@@ -12,7 +23,7 @@ import { RouterView } from "vue-router"
       <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="mr-2 h-4" />
-        <span class="font-semibold">Dashboard</span>
+        <span class="font-semibold">{{ pageTitle }}</span>
       </header>
       <div class="p-4">
         <RouterView />

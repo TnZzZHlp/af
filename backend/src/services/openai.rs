@@ -50,7 +50,7 @@ impl OpenAiService {
         }
 
         let mut targets =
-            routing::fetch_alias_target_details(&self.pool, &model, "openai_chat_completions")
+            routing::fetch_alias_target_details(&self.pool, &model, logging::ApiType::OpenAiChatCompletions)
                 .await?;
         let target = targets
             .pop()

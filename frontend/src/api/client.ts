@@ -17,6 +17,19 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
   const requestHeaders = new Headers(headers);
   requestHeaders.set("Content-Type", "application/json");
 
+  // Add token if available
+  const storedUser = localStorage.getItem("af_auth_user");
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser);
+      if (user.token) {
+        requestHeaders.set("Authorization", `Bearer ${user.token}`);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
   const response = await fetch(`/api${path}`, {
     ...rest,
     headers: requestHeaders,
@@ -35,8 +48,12 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
     throw new ApiError(message, response.status);
   }
 
-  if (!isJson) {
-    throw new ApiError("Unexpected response from server", response.status);
+  if (!isJson && response.status !== 204 && response.headers.get("content-length") !== "0") {
+    // If it's not JSON and not a known empty body status/length, we might still want to allow it if it's a success
+    // but for now let's be a bit more permissive for 200/204
+    if (response.status !== 200) {
+      throw new ApiError("Unexpected response from server", response.status);
+    }
   }
 
   return payload as T;

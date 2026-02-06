@@ -1,16 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, sqlx::Type)]
-#[sqlx(type_name = "api_type")]
-pub enum ApiType {
-    #[sqlx(rename = "openai_chat_completions")]
-    OpenAiChatCompletions,
-    #[sqlx(rename = "openai_responses")]
-    OpenAiResponses,
-    #[sqlx(rename = "anthropic_messages")]
-    AnthropicMessages,
-}
+use super::types::ApiType;
 
 pub struct RequestLogContext {
     pub request_id: Uuid,

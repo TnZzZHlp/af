@@ -4,4 +4,5 @@ use crate::services::openai::OpenAiService;
 pub struct AppState {
     pub pool: sqlx::PgPool,
     pub openai: OpenAiService,
+    pub jwt_secret: String,
 }

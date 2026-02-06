@@ -30,7 +30,11 @@ async fn main() -> anyhow::Result<()> {
 
     let http_client = reqwest::Client::new();
     let openai = OpenAiService::new(pool.clone(), http_client);
-    let state = AppState { pool, openai };
+    let state = AppState {
+        pool,
+        openai,
+        jwt_secret: config.jwt_secret,
+    };
     let app = router::app(state);
 
     let addr: SocketAddr = format!("{}:{}", config.server.host, config.server.port)

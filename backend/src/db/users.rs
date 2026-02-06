@@ -11,8 +11,6 @@ pub struct UserRow {
     pub created_at: time::OffsetDateTime,
 }
 
-
-
 pub async fn fetch_user_by_username(
     pool: &PgPool,
     username: &str,

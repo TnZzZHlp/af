@@ -1,4 +1,6 @@
 use axum::http::{HeaderMap, header};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -10,6 +12,37 @@ pub struct GatewayKey {
     pub name: Option<String>,
     pub rate_limit_rps: Option<i32>,
     pub rate_limit_rpm: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    pub exp: i64,
+}
+
+pub fn create_jwt(user_id: Uuid, secret: &str) -> anyhow::Result<String> {
+    let expiration = time::OffsetDateTime::now_utc() + time::Duration::days(7);
+    let claims = Claims {
+        sub: user_id.to_string(),
+        exp: expiration.unix_timestamp(),
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+    .map_err(|err| anyhow::anyhow!(err))
+}
+
+pub fn verify_jwt(token: &str, secret: &str) -> anyhow::Result<Claims> {
+    decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_ref()),
+        &Validation::default(),
+    )
+    .map(|data| data.claims)
+    .map_err(|err| anyhow::anyhow!(err))
 }
 
 pub fn extract_api_key(headers: &HeaderMap) -> Option<String> {

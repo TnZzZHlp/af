@@ -18,6 +18,16 @@ const router = createRouter({
           name: "dashboard",
           component: () => import("@/pages/DashboardPage.vue"),
         },
+        {
+          path: "gateway-keys",
+          name: "gateway-keys",
+          component: () => import("@/pages/GatewayKeysPage.vue"),
+        },
+        {
+          path: "providers",
+          name: "providers",
+          component: () => import("@/pages/ProvidersPage.vue"),
+        },
       ],
     },
   ],

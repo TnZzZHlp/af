@@ -7,6 +7,7 @@ use serde::Deserialize;
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
+    pub jwt_secret: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,6 +41,8 @@ pub fn load_config() -> anyhow::Result<AppConfig> {
         .transpose()?
         .unwrap_or(10);
 
+    let jwt_secret = env::var("JWT_SECRET").unwrap_or("F0oA/t+6Ia2rs/oWEvCjOUYk67kWKhOISNDzrDP6WHM=".to_string());
+
     Ok(AppConfig {
         server: ServerConfig {
             host: server_host,
@@ -49,5 +52,6 @@ pub fn load_config() -> anyhow::Result<AppConfig> {
             url: database_url,
             max_connections: database_max_connections,
         },
+        jwt_secret,
     })
 }

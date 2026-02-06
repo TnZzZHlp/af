@@ -9,6 +9,7 @@ export type LoginResponse = {
   id: string;
   username: string;
   name: string | null;
+  token: string;
 };
 
 export function login(payload: LoginRequest) {

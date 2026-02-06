@@ -1,18 +1,20 @@
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
+use super::types::ApiType;
+
 #[derive(Debug, Clone)]
 pub struct ModelRow {
     pub id: Uuid,
     pub provider_id: Uuid,
-    pub api_type: String,
+    pub api_type: ApiType,
     pub name: String,
 }
 
 pub async fn fetch_models(
     pool: &PgPool,
     provider_id: Uuid,
-    api_type: &str,
+    api_type: ApiType,
 ) -> anyhow::Result<Vec<ModelRow>> {
     let rows = sqlx::query(
         "SELECT id, provider_id, api_type, name\n         FROM models\n         WHERE provider_id = $1\n           AND api_type = $2\n           AND enabled = true\n         ORDER BY name ASC",

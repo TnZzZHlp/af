@@ -1,6 +1,8 @@
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
+use super::types::{ApiType, LbStrategy};
+
 #[derive(Debug, Clone)]
 pub struct AliasTargetRow {
     pub id: Uuid,
@@ -15,7 +17,7 @@ pub struct AliasTargetRow {
 pub struct AliasTargetDetail {
     pub alias_id: Uuid,
     pub alias_name: String,
-    pub alias_strategy: String,
+    pub alias_strategy: LbStrategy,
     pub alias_target_id: Uuid,
     pub target_weight: i32,
     pub target_priority: i32,
@@ -59,7 +61,7 @@ pub async fn fetch_alias_targets(
 pub async fn fetch_alias_target_details(
     pool: &PgPool,
     alias_name: &str,
-    api_type: &str,
+    api_type: ApiType,
 ) -> anyhow::Result<Vec<AliasTargetDetail>> {
     let rows = sqlx::query(
         "SELECT\n            a.id AS alias_id,\n            a.name AS alias_name,\n            a.strategy AS alias_strategy,\n            at.id AS alias_target_id,\n            at.weight AS target_weight,\n            at.priority AS target_priority,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            pe.id AS provider_endpoint_id,\n            pe.url AS endpoint_url,\n            pe.timeout_ms AS endpoint_timeout_ms,\n            pe.weight AS endpoint_weight,\n            pe.priority AS endpoint_priority,\n            m.id AS model_id,\n            m.name AS model_name\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.id = at.provider_endpoint_id AND pe.enabled = true\n         JOIN providers p\n           ON p.id = pe.provider_id AND p.enabled = true\n         JOIN models m\n           ON m.id = at.model_id AND m.enabled = true\n         WHERE a.name = $1 AND a.api_type = $2 AND a.enabled = true\n         ORDER BY at.priority DESC, at.weight DESC",

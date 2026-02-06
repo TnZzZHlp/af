@@ -58,7 +58,7 @@ function onEnter(el: Element, done: () => void) {
   element.style.overflow = 'hidden'
 
   // Force reflow
-  element.offsetHeight
+  void element.offsetHeight
 
   element.style.transition = `height ${animDuration}ms ease-out, opacity ${animDuration}ms ease-out`
   element.style.height = `${element.scrollHeight}px`
@@ -79,7 +79,7 @@ function onLeave(el: Element, done: () => void) {
   element.style.overflow = 'hidden'
 
   // Force reflow
-  element.offsetHeight
+  void element.offsetHeight
 
   element.style.transition = `height ${animDuration}ms ease-in, opacity ${animDuration}ms ease-in`
   element.style.height = '0'
