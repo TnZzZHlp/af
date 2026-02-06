@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive } from "vue"
-import { login } from "@/api/auth"
-import { ApiError } from "@/api/client"
+import { computed, reactive, ref } from "vue"
+import { useAuthStore } from "@/stores/auth"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -16,24 +15,17 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Activity, AlertCircle, CheckCircle2, Lock, Mail, Loader2 } from "lucide-vue-next"
 
-type LoginState = {
-  username: string
-  password: string
-  loading: boolean
-  error: string | null
-  successMessage: string | null
-}
+const auth = useAuthStore()
 
-const state = reactive<LoginState>({
+const form = reactive({
   username: "",
   password: "",
-  loading: false,
-  error: null,
-  successMessage: null,
 })
 
+const successMessage = ref<string | null>(null)
+
 const canSubmit = computed(() => {
-  return !state.loading && state.username.trim().length > 0 && state.password.length > 0
+  return !auth.loading && form.username.trim().length > 0 && form.password.length > 0
 })
 
 const handleSubmit = async () => {
@@ -41,26 +33,14 @@ const handleSubmit = async () => {
     return
   }
 
-  state.loading = true
-  state.error = null
-  state.successMessage = null
+  successMessage.value = null
 
-  try {
-    const response = await login({
-      username: state.username.trim(),
-      password: state.password,
-    })
-    const greetingName = response.name ?? response.username
-    state.successMessage = `Welcome back, ${greetingName}.`
-    state.password = ""
-  } catch (error) {
-    if (error instanceof ApiError) {
-      state.error = error.message
-    } else {
-      state.error = "Unable to sign in. Please try again."
-    }
-  } finally {
-    state.loading = false
+  const success = await auth.login(form.username.trim(), form.password)
+
+  if (success && auth.user) {
+    const greetingName = auth.user.name ?? auth.user.username
+    successMessage.value = `Welcome back, ${greetingName}.`
+    form.password = ""
   }
 }
 </script>
@@ -110,35 +90,35 @@ const handleSubmit = async () => {
               <Label for="username">Email address</Label>
               <div class="relative">
                 <Mail class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="username" v-model="state.username" type="username" autocomplete="username" class="pl-9"
-                  :disabled="state.loading" />
+                <Input id="username" v-model="form.username" type="username" autocomplete="username" class="pl-9"
+                  :disabled="auth.loading" />
               </div>
             </div>
             <div class="space-y-2">
               <div class="relative">
                 <Lock class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="password" v-model="state.password" type="password" placeholder="••••••••"
-                  autocomplete="current-password" class="pl-9" :disabled="state.loading" />
+                <Input id="password" v-model="form.password" type="password" placeholder="••••••••"
+                  autocomplete="current-password" class="pl-9" :disabled="auth.loading" />
               </div>
             </div>
             <Button type="submit" class="w-full" :disabled="!canSubmit">
-              <Loader2 v-if="state.loading" class="mr-2 h-4 w-4 animate-spin" />
-              {{ state.loading ? 'Signing in...' : 'Sign in' }}
+              <Loader2 v-if="auth.loading" class="mr-2 h-4 w-4 animate-spin" />
+              {{ auth.loading ? 'Signing in...' : 'Sign in' }}
             </Button>
           </form>
         </CardContent>
         <CardFooter class="flex flex-col gap-4">
-          <Alert v-if="state.error" variant="destructive">
+          <Alert v-if="auth.error" variant="destructive">
             <AlertCircle class="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{{ state.error }}</AlertDescription>
+            <AlertDescription>{{ auth.error }}</AlertDescription>
           </Alert>
 
-          <Alert v-else-if="state.successMessage"
+          <Alert v-else-if="successMessage"
             class="border-emerald-500/50 text-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-200">
             <CheckCircle2 class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             <AlertTitle>Success</AlertTitle>
-            <AlertDescription>{{ state.successMessage }}</AlertDescription>
+            <AlertDescription>{{ successMessage }}</AlertDescription>
           </Alert>
         </CardFooter>
       </Card>

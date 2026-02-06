@@ -20,8 +20,10 @@ pub fn app(state: AppState) -> Router {
         ));
 
     Router::new()
-        .merge(auth_routes)
-        .merge(protected_routes)
+        .nest(
+            "/api",
+            Router::new().merge(auth_routes).merge(protected_routes),
+        )
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::request_log::request_log_middleware,
