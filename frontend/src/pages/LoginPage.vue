@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue"
 import { useAuthStore } from "@/stores/auth"
+import { useRouter } from "vue-router"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -13,9 +14,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Activity, AlertCircle, CheckCircle2, Lock, Mail, Loader2 } from "lucide-vue-next"
+import { Activity, AlertCircle, CheckCircle2, Lock, User, Loader2 } from "lucide-vue-next"
 
 const auth = useAuthStore()
+const router = useRouter()
 
 const form = reactive({
   username: "",
@@ -41,7 +43,49 @@ const handleSubmit = async () => {
     const greetingName = auth.user.name ?? auth.user.username
     successMessage.value = `Welcome back, ${greetingName}.`
     form.password = ""
+    setTimeout(() => {
+      router.push("/dashboard")
+    }, 1000)
   }
+}
+
+const animDuration = 300
+
+function onEnter(el: Element, done: () => void) {
+  const element = el as HTMLElement
+  element.style.height = '0'
+  element.style.opacity = '0'
+  element.style.overflow = 'hidden'
+
+  // Force reflow
+  element.offsetHeight
+
+  element.style.transition = `height ${animDuration}ms ease-out, opacity ${animDuration}ms ease-out`
+  element.style.height = `${element.scrollHeight}px`
+  element.style.opacity = '1'
+
+  setTimeout(done, animDuration)
+}
+
+function onAfterEnter(el: Element) {
+  const element = el as HTMLElement
+  element.style.height = 'auto'
+  element.style.overflow = 'visible'
+}
+
+function onLeave(el: Element, done: () => void) {
+  const element = el as HTMLElement
+  element.style.height = `${element.scrollHeight}px`
+  element.style.overflow = 'hidden'
+
+  // Force reflow
+  element.offsetHeight
+
+  element.style.transition = `height ${animDuration}ms ease-in, opacity ${animDuration}ms ease-in`
+  element.style.height = '0'
+  element.style.opacity = '0'
+
+  setTimeout(done, animDuration)
 }
 </script>
 
@@ -87,14 +131,15 @@ const handleSubmit = async () => {
         <CardContent>
           <form @submit.prevent="handleSubmit" class="space-y-4">
             <div class="space-y-2">
-              <Label for="username">Email address</Label>
+              <Label for="username">Username</Label>
               <div class="relative">
-                <Mail class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="username" v-model="form.username" type="username" autocomplete="username" class="pl-9"
+                <User class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="username" v-model="form.username" type="text" autocomplete="username" class="pl-9"
                   :disabled="auth.loading" />
               </div>
             </div>
             <div class="space-y-2">
+              <Label for="password">Password</Label>
               <div class="relative">
                 <Lock class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input id="password" v-model="form.password" type="password" placeholder="••••••••"
@@ -108,18 +153,22 @@ const handleSubmit = async () => {
           </form>
         </CardContent>
         <CardFooter class="flex flex-col gap-4">
-          <Alert v-if="auth.error" variant="destructive">
-            <AlertCircle class="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{{ auth.error }}</AlertDescription>
-          </Alert>
+          <Transition :css="false" @enter="onEnter" @after-enter="onAfterEnter" @leave="onLeave">
+            <Alert v-if="auth.error" variant="destructive">
+              <AlertCircle class="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{{ auth.error }}</AlertDescription>
+            </Alert>
+          </Transition>
 
-          <Alert v-else-if="successMessage"
-            class="border-emerald-500/50 text-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-200">
-            <CheckCircle2 class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            <AlertTitle>Success</AlertTitle>
-            <AlertDescription>{{ successMessage }}</AlertDescription>
-          </Alert>
+          <Transition :css="false" @enter="onEnter" @after-enter="onAfterEnter" @leave="onLeave">
+            <Alert v-if="successMessage"
+              class="border-emerald-500/50 text-emerald-900 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-200">
+              <CheckCircle2 class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{{ successMessage }}</AlertDescription>
+            </Alert>
+          </Transition>
         </CardFooter>
       </Card>
     </div>
