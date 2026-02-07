@@ -44,6 +44,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ApiType, Provider, ProviderEndpoint, ProviderKey } from "@/api/providers";
 
@@ -78,6 +88,16 @@ const keyForm = ref({
   name: "",
   key: "",
 });
+
+// Delete Confirmation State
+const isDeleteProviderDialogOpen = ref(false);
+const deleteProviderId = ref<string | null>(null);
+
+const isDeleteEndpointDialogOpen = ref(false);
+const deleteEndpointTarget = ref<{ providerId: string; endpointId: string } | null>(null);
+
+const isDeleteKeyDialogOpen = ref(false);
+const deleteKeyTarget = ref<{ providerId: string; keyId: string } | null>(null);
 
 onMounted(() => {
   store.fetchProviders();
@@ -121,8 +141,15 @@ async function handleProviderSubmit() {
 }
 
 async function handleDeleteProvider(id: string) {
-  if (confirm("Are you sure you want to delete this provider? This will also delete all associated endpoints and keys.")) {
-    await store.removeProvider(id);
+  deleteProviderId.value = id;
+  isDeleteProviderDialogOpen.value = true;
+}
+
+async function confirmDeleteProvider() {
+  if (deleteProviderId.value) {
+    await store.removeProvider(deleteProviderId.value);
+    isDeleteProviderDialogOpen.value = false;
+    deleteProviderId.value = null;
   }
 }
 
@@ -166,8 +193,15 @@ async function handleEndpointSubmit() {
 }
 
 async function handleDeleteEndpoint(providerId: string, id: string) {
-  if (confirm("Delete this endpoint?")) {
-    await store.removeEndpoint(providerId, id);
+  deleteEndpointTarget.value = { providerId, endpointId: id };
+  isDeleteEndpointDialogOpen.value = true;
+}
+
+async function confirmDeleteEndpoint() {
+  if (deleteEndpointTarget.value) {
+    await store.removeEndpoint(deleteEndpointTarget.value.providerId, deleteEndpointTarget.value.endpointId);
+    isDeleteEndpointDialogOpen.value = false;
+    deleteEndpointTarget.value = null;
   }
 }
 
@@ -214,8 +248,15 @@ async function handleKeySubmit() {
 }
 
 async function handleDeleteKey(providerId: string, id: string) {
-  if (confirm("Delete this API key?")) {
-    await store.removeKey(providerId, id);
+  deleteKeyTarget.value = { providerId, keyId: id };
+  isDeleteKeyDialogOpen.value = true;
+}
+
+async function confirmDeleteKey() {
+  if (deleteKeyTarget.value) {
+    await store.removeKey(deleteKeyTarget.value.providerId, deleteKeyTarget.value.keyId);
+    isDeleteKeyDialogOpen.value = false;
+    deleteKeyTarget.value = null;
   }
 }
 
@@ -319,7 +360,7 @@ async function copyToClipboard(text: string, id: string) {
                       <Edit class="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem class="text-destructive" @click="handleDeleteProvider(provider.id)">
+                    <DropdownMenuItem variant="destructive" @click="handleDeleteProvider(provider.id)">
                       <Trash2 class="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
@@ -373,7 +414,8 @@ async function copyToClipboard(text: string, id: string) {
                                         @click="openEditEndpointSheet(provider.id, ep)">
                                         <Edit class="h-3 w-3" />
                                       </Button>
-                                      <Button variant="ghost" size="icon" class="h-6 w-6 text-destructive"
+                                      <Button variant="ghost" size="icon"
+                                        class="h-6 w-6 text-destructive hover:text-destructive cursor-pointer"
                                         @click="handleDeleteEndpoint(provider.id, ep.id)">
                                         <Trash2 class="h-3 w-3" />
                                       </Button>
@@ -435,7 +477,8 @@ async function copyToClipboard(text: string, id: string) {
                                         @click="openEditKeySheet(provider.id, key)">
                                         <Edit class="h-3 w-3" />
                                       </Button>
-                                      <Button variant="ghost" size="icon" class="h-6 w-6 text-destructive"
+                                      <Button variant="ghost" size="icon"
+                                        class="h-6 w-6 text-destructive hover:text-destructive cursor-pointer"
                                         @click="handleDeleteKey(provider.id, key.id)">
                                         <Trash2 class="h-3 w-3" />
                                       </Button>
@@ -572,5 +615,63 @@ async function copyToClipboard(text: string, id: string) {
         </div>
       </SheetContent>
     </Sheet>
+
+    <!-- Delete Provider Alert Dialog -->
+    <AlertDialog :open="isDeleteProviderDialogOpen" @update:open="isDeleteProviderDialogOpen = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the provider and all associated endpoints and
+            keys.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="deleteProviderId = null">Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive hover:bg-destructive/90 cursor-pointer"
+            @click="confirmDeleteProvider">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Delete Endpoint Alert Dialog -->
+    <AlertDialog :open="isDeleteEndpointDialogOpen" @update:open="isDeleteEndpointDialogOpen = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this endpoint?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will remove the endpoint configuration. Any aliases pointing to this endpoint via the provider will
+            fail.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="deleteEndpointTarget = null">Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive hover:bg-destructive/90 cursor-pointer"
+            @click="confirmDeleteEndpoint">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Delete Key Alert Dialog -->
+    <AlertDialog :open="isDeleteKeyDialogOpen" @update:open="isDeleteKeyDialogOpen = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this provider key?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete the API key credentials from this provider.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="deleteKeyTarget = null">Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive hover:bg-destructive/90 cursor-pointer" @click="confirmDeleteKey">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

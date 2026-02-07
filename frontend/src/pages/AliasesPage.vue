@@ -42,6 +42,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Alias, AliasTargetDetail } from "@/api/aliases";
 
@@ -66,6 +76,13 @@ const targetForm = ref({
   provider_id: "",
   model_id: "",
 });
+
+// Delete Confirmation State
+const isDeleteAliasDialogOpen = ref(false);
+const aliasToDeleteId = ref<string | null>(null);
+
+const isDeleteTargetDialogOpen = ref(false);
+const targetToDelete = ref<{ aliasId: string; targetId: string } | null>(null);
 
 onMounted(() => {
   store.fetchAliases();
@@ -106,9 +123,16 @@ async function handleAliasSubmit() {
   }
 }
 
-async function handleDeleteAlias(id: string) {
-  if (confirm("Delete this alias?")) {
-    await store.removeAlias(id);
+function handleDeleteAlias(id: string) {
+  aliasToDeleteId.value = id;
+  isDeleteAliasDialogOpen.value = true;
+}
+
+async function confirmDeleteAlias() {
+  if (aliasToDeleteId.value) {
+    await store.removeAlias(aliasToDeleteId.value);
+    isDeleteAliasDialogOpen.value = false;
+    aliasToDeleteId.value = null;
   }
 }
 
@@ -158,8 +182,15 @@ async function handleTargetSubmit() {
 }
 
 async function handleDeleteTarget(aliasId: string, id: string) {
-  if (confirm("Delete this target?")) {
-    await store.removeTarget(aliasId, id);
+  targetToDelete.value = { aliasId, targetId: id };
+  isDeleteTargetDialogOpen.value = true;
+}
+
+async function confirmDeleteTarget() {
+  if (targetToDelete.value) {
+    await store.removeTarget(targetToDelete.value.aliasId, targetToDelete.value.targetId);
+    isDeleteTargetDialogOpen.value = false;
+    targetToDelete.value = null;
   }
 }
 
@@ -302,7 +333,8 @@ function formatDate(dateStr: string) {
                                       @click="openEditTargetSheet(alias.id, target)">
                                       <Edit class="h-3 w-3" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" class="h-6 w-6 text-destructive"
+                                    <Button variant="ghost" size="icon"
+                                      class="h-6 w-6 text-destructive hover:text-destructive/70 cursor-pointer"
                                       @click="handleDeleteTarget(alias.id, target.alias_target_id)">
                                       <Trash2 class="h-3 w-3" />
                                     </Button>
@@ -401,5 +433,43 @@ function formatDate(dateStr: string) {
         </div>
       </SheetContent>
     </Sheet>
+
+    <!-- Delete Alias Alert Dialog -->
+    <AlertDialog :open="isDeleteAliasDialogOpen" @update:open="isDeleteAliasDialogOpen = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the alias and remove all associated targets.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="aliasToDeleteId = null" class="cursor-pointer">Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive  hover:bg-destructive/70 cursor-pointer" @click="confirmDeleteAlias">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- Delete Target Alert Dialog -->
+    <AlertDialog :open="isDeleteTargetDialogOpen" @update:open="isDeleteTargetDialogOpen = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this target?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will remove this routing target from the alias. Traffic will no longer be routed to this
+            provider/model.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="targetToDelete = null" class="cursor-pointer">Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive  hover:bg-destructive/70 cursor-pointer"
+            @click="confirmDeleteTarget">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

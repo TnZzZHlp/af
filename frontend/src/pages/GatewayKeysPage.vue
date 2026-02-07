@@ -47,6 +47,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const store = useGatewayKeysStore();
 
@@ -62,6 +72,9 @@ const form = ref({
 
 const visibleKeys = ref<Record<string, boolean>>({});
 const copiedId = ref<string | null>(null);
+
+const isDeleteAlertOpen = ref(false);
+const deleteKeyId = ref<string | null>(null);
 
 onMounted(() => {
   store.fetchKeys();
@@ -108,8 +121,15 @@ async function handleSubmit() {
 }
 
 async function handleDelete(id: string) {
-  if (confirm("Are you sure you want to delete this API key?")) {
-    await store.deleteKey(id);
+  deleteKeyId.value = id;
+  isDeleteAlertOpen.value = true;
+}
+
+async function confirmDelete() {
+  if (deleteKeyId.value) {
+    await store.deleteKey(deleteKeyId.value);
+    isDeleteAlertOpen.value = false;
+    deleteKeyId.value = null;
   }
 }
 
@@ -206,7 +226,7 @@ function formatDate(dateStr: string) {
                       <Edit class="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem class="text-destructive" @click="handleDelete(key.id)">
+                    <DropdownMenuItem variant="destructive" @click="handleDelete(key.id)">
                       <Trash2 class="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
@@ -319,5 +339,24 @@ function formatDate(dateStr: string) {
         </div>
       </SheetContent>
     </Sheet>
+
+    <AlertDialog :open="isDeleteAlertOpen" @update:open="isDeleteAlertOpen = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the API key and revoke access for any
+            applications
+            using it.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="deleteKeyId = null" class="cursor-pointer">Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive hover:bg-destructive/70 cursor-pointer" @click="confirmDelete">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
