@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -24,7 +24,7 @@ pub async fn fetch_provider_keys(
     pool: &PgPool,
     provider_id: Uuid,
 ) -> anyhow::Result<Vec<ProviderKeyRow>> {
-    let rows = sqlx::query(
+    let rows = sqlx::query!(
         "SELECT
             id,
             provider_id,
@@ -41,24 +41,24 @@ pub async fn fetch_provider_keys(
            AND enabled = true
            AND (circuit_open_until IS NULL OR circuit_open_until <= now())
          ORDER BY usage_count ASC",
+        provider_id
     )
-    .bind(provider_id)
     .fetch_all(pool)
     .await?;
 
     let mut keys = Vec::with_capacity(rows.len());
     for row in rows {
         keys.push(ProviderKeyRow {
-            id: row.try_get("id")?,
-            provider_id: row.try_get("provider_id")?,
-            name: row.try_get("name")?,
-            key: row.try_get("key")?,
-            usage_count: row.try_get("usage_count")?,
-            enabled: row.try_get("enabled")?,
-            fail_count: row.try_get("fail_count")?,
-            circuit_open_until: row.try_get("circuit_open_until")?,
-            last_fail_at: row.try_get("last_fail_at")?,
-            created_at: row.try_get("created_at")?,
+            id: row.id,
+            provider_id: row.provider_id,
+            name: row.name,
+            key: row.key,
+            usage_count: row.usage_count,
+            enabled: row.enabled,
+            fail_count: row.fail_count,
+            circuit_open_until: row.circuit_open_until,
+            last_fail_at: row.last_fail_at,
+            created_at: row.created_at,
         });
     }
 
@@ -69,7 +69,7 @@ pub async fn list_keys_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
 ) -> anyhow::Result<Vec<ProviderKeyRow>> {
-    let rows = sqlx::query(
+    let rows = sqlx::query!(
         "SELECT
             id,
             provider_id,
@@ -84,24 +84,24 @@ pub async fn list_keys_by_provider(
          FROM provider_keys
          WHERE provider_id = $1
          ORDER BY created_at DESC",
+        provider_id
     )
-    .bind(provider_id)
     .fetch_all(pool)
     .await?;
 
     let mut keys = Vec::with_capacity(rows.len());
     for row in rows {
         keys.push(ProviderKeyRow {
-            id: row.try_get("id")?,
-            provider_id: row.try_get("provider_id")?,
-            name: row.try_get("name")?,
-            key: row.try_get("key")?,
-            usage_count: row.try_get("usage_count")?,
-            enabled: row.try_get("enabled")?,
-            fail_count: row.try_get("fail_count")?,
-            circuit_open_until: row.try_get("circuit_open_until")?,
-            last_fail_at: row.try_get("last_fail_at")?,
-            created_at: row.try_get("created_at")?,
+            id: row.id,
+            provider_id: row.provider_id,
+            name: row.name,
+            key: row.key,
+            usage_count: row.usage_count,
+            enabled: row.enabled,
+            fail_count: row.fail_count,
+            circuit_open_until: row.circuit_open_until,
+            last_fail_at: row.last_fail_at,
+            created_at: row.created_at,
         });
     }
 
@@ -115,28 +115,28 @@ pub struct CreateKeyParams {
 }
 
 pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Result<ProviderKeyRow> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "INSERT INTO provider_keys (provider_id, name, key)
          VALUES ($1, $2, $3)
          RETURNING id, provider_id, name, key, usage_count, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
+        params.provider_id,
+        params.name,
+        params.key
     )
-    .bind(params.provider_id)
-    .bind(params.name)
-    .bind(params.key)
     .fetch_one(pool)
     .await?;
 
     Ok(ProviderKeyRow {
-        id: row.try_get("id")?,
-        provider_id: row.try_get("provider_id")?,
-        name: row.try_get("name")?,
-        key: row.try_get("key")?,
-        usage_count: row.try_get("usage_count")?,
-        enabled: row.try_get("enabled")?,
-        fail_count: row.try_get("fail_count")?,
-        circuit_open_until: row.try_get("circuit_open_until")?,
-        last_fail_at: row.try_get("last_fail_at")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        provider_id: row.provider_id,
+        name: row.name,
+        key: row.key,
+        usage_count: row.usage_count,
+        enabled: row.enabled,
+        fail_count: row.fail_count,
+        circuit_open_until: row.circuit_open_until,
+        last_fail_at: row.last_fail_at,
+        created_at: row.created_at,
     })
 }
 
@@ -150,16 +150,16 @@ pub async fn update_key(
     id: Uuid,
     params: UpdateKeyParams,
 ) -> anyhow::Result<Option<ProviderKeyRow>> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "UPDATE provider_keys
          SET name = COALESCE($1, name),
              enabled = COALESCE($2, enabled)
          WHERE id = $3
          RETURNING id, provider_id, name, key, usage_count, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
+        params.name,
+        params.enabled,
+        id
     )
-    .bind(params.name)
-    .bind(params.enabled)
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
@@ -168,31 +168,32 @@ pub async fn update_key(
     };
 
     Ok(Some(ProviderKeyRow {
-        id: row.try_get("id")?,
-        provider_id: row.try_get("provider_id")?,
-        name: row.try_get("name")?,
-        key: row.try_get("key")?,
-        usage_count: row.try_get("usage_count")?,
-        enabled: row.try_get("enabled")?,
-        fail_count: row.try_get("fail_count")?,
-        circuit_open_until: row.try_get("circuit_open_until")?,
-        last_fail_at: row.try_get("last_fail_at")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        provider_id: row.provider_id,
+        name: row.name,
+        key: row.key,
+        usage_count: row.usage_count,
+        enabled: row.enabled,
+        fail_count: row.fail_count,
+        circuit_open_until: row.circuit_open_until,
+        last_fail_at: row.last_fail_at,
+        created_at: row.created_at,
     }))
 }
 
 pub async fn delete_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM provider_keys WHERE id = $1")
-        .bind(id)
+    let result = sqlx::query!("DELETE FROM provider_keys WHERE id = $1", id)
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
 }
 
 pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
-    sqlx::query("UPDATE provider_keys SET usage_count = usage_count + 1 WHERE id = $1")
-        .bind(id)
-        .execute(pool)
-        .await?;
+    sqlx::query!(
+        "UPDATE provider_keys SET usage_count = usage_count + 1 WHERE id = $1",
+        id
+    )
+    .execute(pool)
+    .await?;
     Ok(())
 }

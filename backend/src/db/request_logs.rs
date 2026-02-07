@@ -139,7 +139,12 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
         return Ok(());
     };
 
-    sqlx::query(
+    let client_ip = context
+        .client_ip
+        .as_deref()
+        .and_then(|value| value.parse::<sqlx::types::ipnetwork::IpNetwork>().ok());
+
+    sqlx::query!(
         "INSERT INTO request_logs (
             request_id,
             gateway_key_id,
@@ -161,22 +166,22 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
                 $8, $9, $10::inet, $11, $12, $13,
                 $14, $15
             )",
+        context.request_id,
+        context.gateway_key_id,
+        api_type as _,
+        context.model.as_deref(),
+        context.alias.as_deref(),
+        context.provider.as_deref(),
+        context.endpoint.as_deref(),
+        context.status_code,
+        context.latency_ms,
+        client_ip,
+        context.user_agent.as_deref(),
+        context.request_body.as_deref(),
+        context.response_body.as_deref(),
+        context.request_content_type.as_deref(),
+        context.response_content_type.as_deref()
     )
-    .bind(context.request_id)
-    .bind(context.gateway_key_id)
-    .bind(api_type)
-    .bind(context.model.as_deref())
-    .bind(context.alias.as_deref())
-    .bind(context.provider.as_deref())
-    .bind(context.endpoint.as_deref())
-    .bind(context.status_code)
-    .bind(context.latency_ms)
-    .bind(context.client_ip.as_deref())
-    .bind(context.user_agent.as_deref())
-    .bind(context.request_body.as_deref())
-    .bind(context.response_body.as_deref())
-    .bind(context.request_content_type.as_deref())
-    .bind(context.response_content_type.as_deref())
     .execute(pool)
     .await?;
 

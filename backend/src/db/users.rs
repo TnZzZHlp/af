@@ -1,4 +1,4 @@
-use sqlx::{PgPool, Row, types::time};
+use sqlx::{PgPool, types::time};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -15,20 +15,20 @@ pub async fn fetch_user_by_username(
     pool: &PgPool,
     username: &str,
 ) -> anyhow::Result<Option<UserRow>> {
-    let row = sqlx::query(
-        "SELECT id, username, password_hash, password_updated_at, enabled, created_at\n         FROM users\n         WHERE username = $1",
+    let row = sqlx::query!(
+        "SELECT id, username, password_hash, password_updated_at, enabled, created_at FROM users WHERE username = $1",
+        username
     )
-    .bind(username)
     .fetch_optional(pool)
     .await?;
 
     Ok(row.map(|row| UserRow {
-        id: row.try_get("id").unwrap(),
-        username: row.try_get("username").unwrap(),
-        password_hash: row.try_get("password_hash").unwrap(),
-        password_updated_at: row.try_get("password_updated_at").unwrap(),
-        enabled: row.try_get("enabled").unwrap(),
-        created_at: row.try_get("created_at").unwrap(),
+        id: row.id,
+        username: row.username,
+        password_hash: row.password_hash,
+        password_updated_at: row.password_updated_at,
+        enabled: row.enabled,
+        created_at: row.created_at,
     }))
 }
 
@@ -37,21 +37,21 @@ pub async fn insert_user(
     username: &str,
     password_hash: &str,
 ) -> anyhow::Result<UserRow> {
-    let row = sqlx::query(
-        "INSERT INTO users (username, password_hash)\n         VALUES ($1, $2)\n         RETURNING id, username, password_hash, password_updated_at, enabled, created_at",
+    let row = sqlx::query!(
+        "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, password_hash, password_updated_at, enabled, created_at",
+        username,
+        password_hash
     )
-    .bind(username)
-    .bind(password_hash)
     .fetch_one(pool)
     .await?;
 
     Ok(UserRow {
-        id: row.try_get("id")?,
-        username: row.try_get("username")?,
-        password_hash: row.try_get("password_hash")?,
-        password_updated_at: row.try_get("password_updated_at")?,
-        enabled: row.try_get("enabled")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        username: row.username,
+        password_hash: row.password_hash,
+        password_updated_at: row.password_updated_at,
+        enabled: row.enabled,
+        created_at: row.created_at,
     })
 }
 
@@ -60,11 +60,11 @@ pub async fn update_password_hash(
     user_id: Uuid,
     password_hash: &str,
 ) -> anyhow::Result<()> {
-    sqlx::query(
-        "UPDATE users\n         SET password_hash = $1, password_updated_at = now()\n         WHERE id = $2",
+    sqlx::query!(
+        "UPDATE users SET password_hash = $1, password_updated_at = now() WHERE id = $2",
+        password_hash,
+        user_id
     )
-    .bind(password_hash)
-    .bind(user_id)
     .execute(pool)
     .await?;
 
@@ -72,7 +72,7 @@ pub async fn update_password_hash(
 }
 
 pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<UserRow>> {
-    let rows = sqlx::query(
+    let rows = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at
          FROM users
          ORDER BY created_at DESC",
@@ -83,12 +83,12 @@ pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<UserRow>> {
     let mut users = Vec::new();
     for row in rows {
         users.push(UserRow {
-            id: row.try_get("id")?,
-            username: row.try_get("username")?,
-            password_hash: row.try_get("password_hash")?,
-            password_updated_at: row.try_get("password_updated_at")?,
-            enabled: row.try_get("enabled")?,
-            created_at: row.try_get("created_at")?,
+            id: row.id,
+            username: row.username,
+            password_hash: row.password_hash,
+            password_updated_at: row.password_updated_at,
+            enabled: row.enabled,
+            created_at: row.created_at,
         });
     }
 
@@ -96,22 +96,22 @@ pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<UserRow>> {
 }
 
 pub async fn fetch_user_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<UserRow>> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at
          FROM users
          WHERE id = $1",
+        id
     )
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
     Ok(row.map(|row| UserRow {
-        id: row.try_get("id").unwrap(),
-        username: row.try_get("username").unwrap(),
-        password_hash: row.try_get("password_hash").unwrap(),
-        password_updated_at: row.try_get("password_updated_at").unwrap(),
-        enabled: row.try_get("enabled").unwrap(),
-        created_at: row.try_get("created_at").unwrap(),
+        id: row.id,
+        username: row.username,
+        password_hash: row.password_hash,
+        password_updated_at: row.password_updated_at,
+        enabled: row.enabled,
+        created_at: row.created_at,
     }))
 }
 
@@ -121,31 +121,30 @@ pub async fn update_user(
     username: &str,
     enabled: bool,
 ) -> anyhow::Result<Option<UserRow>> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "UPDATE users
          SET username = $1, enabled = $2
          WHERE id = $3
          RETURNING id, username, password_hash, password_updated_at, enabled, created_at",
+        username,
+        enabled,
+        id
     )
-    .bind(username)
-    .bind(enabled)
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
     Ok(row.map(|row| UserRow {
-        id: row.try_get("id").unwrap(),
-        username: row.try_get("username").unwrap(),
-        password_hash: row.try_get("password_hash").unwrap(),
-        password_updated_at: row.try_get("password_updated_at").unwrap(),
-        enabled: row.try_get("enabled").unwrap(),
-        created_at: row.try_get("created_at").unwrap(),
+        id: row.id,
+        username: row.username,
+        password_hash: row.password_hash,
+        password_updated_at: row.password_updated_at,
+        enabled: row.enabled,
+        created_at: row.created_at,
     }))
 }
 
 pub async fn delete_user(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
-    sqlx::query("DELETE FROM users WHERE id = $1")
-        .bind(id)
+    sqlx::query!("DELETE FROM users WHERE id = $1", id)
         .execute(pool)
         .await?;
 

@@ -84,7 +84,7 @@ or offline validation, add the commands here.
 
 #### SQLx Usage
 
-- Use `sqlx::query` with bind parameters (no string interpolation).
+- Use `sqlx::query!!` with bind parameters (no string interpolation).
 - Map rows explicitly via `try_get` to avoid accidental schema drift.
 
 ### Vue Frontend

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -18,24 +18,24 @@ pub async fn list_aliases(
     page_size: i64,
 ) -> anyhow::Result<Vec<AliasRow>> {
     let offset = (page - 1) * page_size;
-    let rows = sqlx::query(
+    let rows = sqlx::query!(
         "SELECT id, name, enabled, created_at
          FROM aliases
          ORDER BY created_at DESC
          LIMIT $1 OFFSET $2",
+        page_size,
+        offset
     )
-    .bind(page_size)
-    .bind(offset)
     .fetch_all(pool)
     .await?;
 
     let mut aliases = Vec::with_capacity(rows.len());
     for row in rows {
         aliases.push(AliasRow {
-            id: row.try_get("id")?,
-            name: row.try_get("name")?,
-            enabled: row.try_get("enabled")?,
-            created_at: row.try_get("created_at")?,
+            id: row.id,
+            name: row.name,
+            enabled: row.enabled,
+            created_at: row.created_at,
         });
     }
 
@@ -43,12 +43,12 @@ pub async fn list_aliases(
 }
 
 pub async fn get_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<AliasRow>> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "SELECT id, name, enabled, created_at
          FROM aliases
          WHERE id = $1",
+        id
     )
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
@@ -57,10 +57,10 @@ pub async fn get_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<AliasRo
     };
 
     Ok(Some(AliasRow {
-        id: row.try_get("id")?,
-        name: row.try_get("name")?,
-        enabled: row.try_get("enabled")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        name: row.name,
+        enabled: row.enabled,
+        created_at: row.created_at,
     }))
 }
 
@@ -68,24 +68,21 @@ pub struct CreateAliasParams {
     pub name: String,
 }
 
-pub async fn create_alias(
-    pool: &PgPool,
-    params: CreateAliasParams,
-) -> anyhow::Result<AliasRow> {
-    let row = sqlx::query(
+pub async fn create_alias(pool: &PgPool, params: CreateAliasParams) -> anyhow::Result<AliasRow> {
+    let row = sqlx::query!(
         "INSERT INTO aliases (name)
          VALUES ($1)
          RETURNING id, name, enabled, created_at",
+        params.name
     )
-    .bind(params.name)
     .fetch_one(pool)
     .await?;
 
     Ok(AliasRow {
-        id: row.try_get("id")?,
-        name: row.try_get("name")?,
-        enabled: row.try_get("enabled")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        name: row.name,
+        enabled: row.enabled,
+        created_at: row.created_at,
     })
 }
 
@@ -99,16 +96,16 @@ pub async fn update_alias(
     id: Uuid,
     params: UpdateAliasParams,
 ) -> anyhow::Result<Option<AliasRow>> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "UPDATE aliases
          SET name = COALESCE($1, name),
              enabled = COALESCE($2, enabled)
          WHERE id = $3
          RETURNING id, name, enabled, created_at",
+        params.name,
+        params.enabled,
+        id
     )
-    .bind(params.name)
-    .bind(params.enabled)
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
@@ -117,16 +114,15 @@ pub async fn update_alias(
     };
 
     Ok(Some(AliasRow {
-        id: row.try_get("id")?,
-        name: row.try_get("name")?,
-        enabled: row.try_get("enabled")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        name: row.name,
+        enabled: row.enabled,
+        created_at: row.created_at,
     }))
 }
 
 pub async fn delete_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM aliases WHERE id = $1")
-        .bind(id)
+    let result = sqlx::query!("DELETE FROM aliases WHERE id = $1", id)
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)

@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            request_id,\n            gateway_key_id,\n            api_type as \"api_type: ApiType\",\n            model,\n            alias,\n            provider,\n            endpoint,\n            status_code,\n            latency_ms,\n            client_ip::text as client_ip,\n            user_agent,\n            request_content_type,\n            response_content_type,\n            created_at\n        FROM request_logs\n        ORDER BY created_at DESC\n        LIMIT $1 OFFSET $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "request_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "gateway_key_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "api_type: ApiType",
+        "type_info": {
+          "Custom": {
+            "name": "api_type",
+            "kind": {
+              "Enum": [
+                "openai_chat_completions",
+                "openai_responses",
+                "anthropic_messages"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "model",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "alias",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "provider",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "endpoint",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "status_code",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "latency_ms",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "client_ip",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "user_agent",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "request_content_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "response_content_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "42b56829ee2d9c7cd2975edb62592d073af49dd7f03d0188157b8bbcc2d0dd7e"
+}

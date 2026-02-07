@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -37,7 +37,7 @@ pub async fn fetch_all_alias_target_details(
     pool: &PgPool,
     alias_id: Uuid,
 ) -> anyhow::Result<Vec<AliasTargetDetail>> {
-    let rows = sqlx::query(
+    let rows = sqlx::query!(
         "SELECT
             at.id,
             a.id AS alias_id,
@@ -56,26 +56,26 @@ pub async fn fetch_all_alias_target_details(
            ON p.id = at.provider_id
          WHERE a.id = $1
          ORDER BY p.usage_count ASC, p.id",
+        alias_id
     )
-    .bind(alias_id)
     .fetch_all(pool)
     .await?;
 
     let mut details = Vec::with_capacity(rows.len());
     for row in rows {
         details.push(AliasTargetDetail {
-            id: row.try_get("id")?,
-            alias_id: row.try_get("alias_id")?,
-            alias_name: row.try_get("alias_name")?,
-            alias_target_id: row.try_get("alias_target_id")?,
-            provider_id: row.try_get("provider_id")?,
-            provider_name: row.try_get("provider_name")?,
-            provider_usage_count: row.try_get("provider_usage_count")?,
+            id: row.id,
+            alias_id: row.alias_id,
+            alias_name: row.alias_name,
+            alias_target_id: row.alias_target_id,
+            provider_id: row.provider_id,
+            provider_name: row.provider_name,
+            provider_usage_count: row.provider_usage_count,
             provider_endpoint_id: None,
             endpoint_url: None,
-            model_id: row.try_get("model_id")?,
-            enabled: row.try_get("enabled")?,
-            created_at: row.try_get("created_at")?,
+            model_id: row.model_id,
+            enabled: row.enabled,
+            created_at: row.created_at,
         });
     }
 
@@ -92,24 +92,24 @@ pub async fn create_alias_target(
     pool: &PgPool,
     params: CreateAliasTargetParams,
 ) -> anyhow::Result<AliasTargetRow> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "INSERT INTO alias_targets (alias_id, provider_id, model_id)
          VALUES ($1, $2, $3)
          RETURNING id, alias_id, provider_id, model_id, enabled, created_at",
+        params.alias_id,
+        params.provider_id,
+        params.model_id
     )
-    .bind(params.alias_id)
-    .bind(params.provider_id)
-    .bind(params.model_id)
     .fetch_one(pool)
     .await?;
 
     Ok(AliasTargetRow {
-        id: row.try_get("id")?,
-        alias_id: row.try_get("alias_id")?,
-        provider_id: row.try_get("provider_id")?,
-        model_id: row.try_get("model_id")?,
-        enabled: row.try_get("enabled")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        alias_id: row.alias_id,
+        provider_id: row.provider_id,
+        model_id: row.model_id,
+        enabled: row.enabled,
+        created_at: row.created_at,
     })
 }
 
@@ -124,7 +124,7 @@ pub async fn update_alias_target(
     id: Uuid,
     params: UpdateAliasTargetParams,
 ) -> anyhow::Result<Option<AliasTargetRow>> {
-    let row = sqlx::query(
+    let row = sqlx::query!(
         "UPDATE alias_targets
          SET
             provider_id = COALESCE($1, provider_id),
@@ -132,11 +132,11 @@ pub async fn update_alias_target(
             enabled = COALESCE($3, enabled)
          WHERE id = $4
          RETURNING id, alias_id, provider_id, model_id, enabled, created_at",
+        params.provider_id,
+        params.model_id,
+        params.enabled,
+        id
     )
-    .bind(params.provider_id)
-    .bind(params.model_id)
-    .bind(params.enabled)
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
@@ -145,18 +145,17 @@ pub async fn update_alias_target(
     };
 
     Ok(Some(AliasTargetRow {
-        id: row.try_get("id")?,
-        alias_id: row.try_get("alias_id")?,
-        provider_id: row.try_get("provider_id")?,
-        model_id: row.try_get("model_id")?,
-        enabled: row.try_get("enabled")?,
-        created_at: row.try_get("created_at")?,
+        id: row.id,
+        alias_id: row.alias_id,
+        provider_id: row.provider_id,
+        model_id: row.model_id,
+        enabled: row.enabled,
+        created_at: row.created_at,
     }))
 }
 
 pub async fn delete_alias_target(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
-    let result = sqlx::query("DELETE FROM alias_targets WHERE id = $1")
-        .bind(id)
+    let result = sqlx::query!("DELETE FROM alias_targets WHERE id = $1", id)
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
@@ -171,7 +170,7 @@ pub async fn fetch_alias_target_details(
     // We join provider_endpoints on provider_id and api_type to find a valid endpoint.
     // We distinct on provider_id to avoid duplicates if multiple endpoints exist.
     // We just pick one endpoint (e.g. max ID or whatever) since we assume any valid endpoint for the provider+api_type works.
-    let rows = sqlx::query(
+    let rows = sqlx::query!(
         "SELECT DISTINCT ON (p.usage_count, p.id)
             at.id,
             a.id AS alias_id,
@@ -194,31 +193,29 @@ pub async fn fetch_alias_target_details(
            ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true
          WHERE a.name = $1 AND a.enabled = true
          ORDER BY p.usage_count ASC, p.id",
+        alias_name,
+        api_type as _
     )
-    .bind(alias_name)
-    .bind(api_type)
     .fetch_all(pool)
     .await?;
 
     let mut details = Vec::with_capacity(rows.len());
     for row in rows {
         details.push(AliasTargetDetail {
-            id: row.try_get("id")?,
-            alias_id: row.try_get("alias_id")?,
-            alias_name: row.try_get("alias_name")?,
-            alias_target_id: row.try_get("alias_target_id")?,
-            provider_id: row.try_get("provider_id")?,
-            provider_name: row.try_get("provider_name")?,
-            provider_usage_count: row.try_get("provider_usage_count")?,
-            provider_endpoint_id: row.try_get("provider_endpoint_id").ok(),
-            endpoint_url: row.try_get("endpoint_url").ok(),
-            model_id: row.try_get("model_id")?,
-            enabled: row.try_get("enabled")?,
-            created_at: row.try_get("created_at")?,
+            id: row.id,
+            alias_id: row.alias_id,
+            alias_name: row.alias_name,
+            alias_target_id: row.alias_target_id,
+            provider_id: row.provider_id,
+            provider_name: row.provider_name,
+            provider_usage_count: row.provider_usage_count,
+            provider_endpoint_id: Some(row.provider_endpoint_id),
+            endpoint_url: Some(row.endpoint_url),
+            model_id: row.model_id,
+            enabled: row.enabled,
+            created_at: row.created_at,
         });
     }
 
     Ok(details)
 }
-
-

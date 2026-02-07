@@ -8,9 +8,9 @@ anyhow = "1.0.101"
 argon2 = "0.5.3"
 axum = "0.8.8"
 async-stream = "0.3.6"
-clap = { version = "4.5.29", features = ["derive"] }
+clap = { version = "4.5.57", features = ["derive"] }
 futures-util = "0.3.31"
-reqwest = { version = "0.13.1", features = ["json", "stream"] }
+reqwest = { version = "0.13.2", features = ["json", "stream"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 thiserror = "2.0.18"
@@ -21,6 +21,7 @@ sqlx = { version = "0.8.6", features = [
     "json",
     "time",
     "macros",
+    "ipnetwork",
 ] }
 tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.44"
