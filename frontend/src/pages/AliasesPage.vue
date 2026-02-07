@@ -149,8 +149,8 @@ async function handleTargetSubmit() {
     });
   } else {
     await store.addTarget(currentAliasId.value, {
-        provider_id: targetForm.value.provider_id,
-        model_id: targetForm.value.model_id,
+      provider_id: targetForm.value.provider_id,
+      model_id: targetForm.value.model_id,
     });
   }
 
@@ -203,7 +203,7 @@ function formatDate(dateStr: string) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead class="w-[30px]"></TableHead>
+            <TableHead class="w-7.5"></TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created At</TableHead>
@@ -341,7 +341,8 @@ function formatDate(dateStr: string) {
           <div class="grid flex-1 auto-rows-min gap-6 px-6 overflow-y-auto">
             <div class="grid gap-2">
               <Label for="alias-name">Name</Label>
-              <Input id="alias-name" v-model="aliasForm.name" placeholder="e.g. gpt-4-turbo" :disabled="isEditingAlias" />
+              <Input id="alias-name" v-model="aliasForm.name" placeholder="e.g. gpt-4-turbo"
+                :disabled="isEditingAlias" />
               <p v-if="isEditingAlias" class="text-xs text-muted-foreground">Name cannot be changed.</p>
             </div>
           </div>

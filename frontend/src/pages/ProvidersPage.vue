@@ -106,7 +106,7 @@ function openEditProviderSheet(provider: Provider) {
 async function handleProviderSubmit() {
   const payload = {
     name: providerForm.value.name,
-    description: providerForm.value.description || undefined,
+    description: providerForm.value.description,
   };
 
   if (isEditingProvider.value && editingProviderId.value) {
@@ -476,12 +476,12 @@ async function copyToClipboard(text: string, id: string) {
           <div class="grid flex-1 auto-rows-min gap-6 px-6 overflow-y-auto">
             <div class="grid gap-2">
               <Label for="provider-name">Name</Label>
-              <Input id="provider-name" v-model="providerForm.name" placeholder="e.g. OpenAI" />
+              <Input id="provider-name" v-model="providerForm.name" placeholder="e.g. OpenAI" autocomplete="off" />
             </div>
             <div class="grid gap-2">
               <Label for="provider-description">Description (Optional)</Label>
-              <Input id="provider-description" v-model="providerForm.description"
-                placeholder="Main production account" />
+              <Input id="provider-description" v-model="providerForm.description" placeholder="Main production account"
+                autocomplete="off" />
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">
@@ -523,7 +523,8 @@ async function copyToClipboard(text: string, id: string) {
             </div>
             <div class="grid gap-2">
               <Label for="ep-url">URL</Label>
-              <Input id="ep-url" v-model="endpointForm.url" placeholder="https://api.openai.com/v1/chat/completions" />
+              <Input id="ep-url" v-model="endpointForm.url" placeholder="https://api.openai.com/v1/chat/completions"
+                autocomplete="off" />
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">
@@ -552,11 +553,11 @@ async function copyToClipboard(text: string, id: string) {
           <div class="grid flex-1 auto-rows-min gap-6 px-6 overflow-y-auto">
             <div class="grid gap-2">
               <Label for="key-name">Name (Optional)</Label>
-              <Input id="key-name" v-model="keyForm.name" placeholder="Primary Key" />
+              <Input id="key-name" v-model="keyForm.name" placeholder="Primary Key" autocomplete="off" />
             </div>
             <div class="grid gap-2" v-if="!isEditingKey">
               <Label for="key-value">API Key</Label>
-              <Input id="key-value" v-model="keyForm.key" type="password" />
+              <Input id="key-value" v-model="keyForm.key" type="password" autocomplete="off" />
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">
