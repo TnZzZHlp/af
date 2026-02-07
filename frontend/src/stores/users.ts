@@ -11,6 +11,7 @@ import {
   type UpdateUserRequest,
   type UpdatePasswordRequest,
 } from "@/api/users";
+import { ApiError } from "@/api/client";
 
 export const useUsersStore = defineStore("users", () => {
   const users = ref<User[]>([]);
@@ -22,8 +23,12 @@ export const useUsersStore = defineStore("users", () => {
     error.value = null;
     try {
       users.value = await apiListUsers();
-    } catch (e: any) {
-      error.value = e.message || "Failed to fetch users";
+    } catch (e: unknown) {
+      if (e instanceof ApiError) {
+        error.value = e.message;
+      } else {
+        error.value = "Failed to fetch users";
+      }
       throw e;
     } finally {
       loading.value = false;
@@ -37,8 +42,12 @@ export const useUsersStore = defineStore("users", () => {
       const newUser = await apiCreateUser(payload);
       users.value.push(newUser);
       return newUser;
-    } catch (e: any) {
-      error.value = e.message || "Failed to create user";
+    } catch (e: unknown) {
+      if (e instanceof ApiError) {
+        error.value = e.message;
+      } else {
+        error.value = "Failed to create user";
+      }
       throw e;
     } finally {
       loading.value = false;
@@ -55,8 +64,12 @@ export const useUsersStore = defineStore("users", () => {
         users.value[index] = updatedUser;
       }
       return updatedUser;
-    } catch (e: any) {
-      error.value = e.message || "Failed to update user";
+    } catch (e: unknown) {
+      if (e instanceof ApiError) {
+        error.value = e.message;
+      } else {
+        error.value = "Failed to update user";
+      }
       throw e;
     } finally {
       loading.value = false;
@@ -68,8 +81,12 @@ export const useUsersStore = defineStore("users", () => {
     error.value = null;
     try {
       await apiUpdatePassword(id, payload);
-    } catch (e: any) {
-      error.value = e.message || "Failed to update password";
+    } catch (e: unknown) {
+      if (e instanceof ApiError) {
+        error.value = e.message;
+      } else {
+        error.value = "Failed to update password";
+      }
       throw e;
     } finally {
       loading.value = false;
@@ -82,8 +99,12 @@ export const useUsersStore = defineStore("users", () => {
     try {
       await apiDeleteUser(id);
       users.value = users.value.filter((u) => u.id !== id);
-    } catch (e: any) {
-      error.value = e.message || "Failed to delete user";
+    } catch (e: unknown) {
+      if (e instanceof ApiError) {
+        error.value = e.message;
+      } else {
+        error.value = "Failed to delete user";
+      }
       throw e;
     } finally {
       loading.value = false;

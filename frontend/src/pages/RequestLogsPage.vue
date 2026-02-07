@@ -153,6 +153,7 @@ function nextPage() {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead class="w-7.5"></TableHead>
             <TableHead>Time</TableHead>
             <TableHead>Provider</TableHead>
             <TableHead>Status</TableHead>
@@ -175,6 +176,8 @@ function nextPage() {
           </TableRow>
 
           <TableRow v-for="log in store.requestLogs" :key="log.request_id">
+            <TableCell></TableCell>
+
             <TableCell class="text-xs whitespace-nowrap">
               {{ formatDate(log.created_at) }}
             </TableCell>

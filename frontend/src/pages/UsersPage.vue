@@ -191,6 +191,7 @@ function formatDate(dateStr: string | null) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead class="w-7.5"></TableHead>
             <TableHead>Username</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created At</TableHead>
@@ -200,18 +201,19 @@ function formatDate(dateStr: string | null) {
         </TableHeader>
         <TableBody>
           <TableRow v-if="store.loading && store.users.length === 0">
-            <TableCell colspan="5" class="h-24 text-center">
+            <TableCell colspan="6" class="h-24 text-center">
               <Loader2 class="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
             </TableCell>
           </TableRow>
           <TableRow v-else-if="store.users.length === 0">
-            <TableCell colspan="5" class="h-24 text-center text-muted-foreground">
+            <TableCell colspan="6" class="h-24 text-center text-muted-foreground">
               No users found.
             </TableCell>
           </TableRow>
 
           <template v-for="user in store.users" :key="user.id">
             <TableRow>
+              <TableCell></TableCell>
               <TableCell class="font-medium">
                 {{ user.username }}
               </TableCell>
