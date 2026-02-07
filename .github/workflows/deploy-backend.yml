@@ -66,12 +66,12 @@ jobs:
           # Ensure destination directory exists
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "mkdir -p /root/github/af"
 
-          # Stop the backend service before replacing binary
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "systemctl stop af || true"
-
           # Upload backend binary to temp dir
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /root/github/af/.deploy_tmp_backend && mkdir -p /root/github/af/.deploy_tmp_backend"
           scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 backend/target/release/backend root@$SERVER_IP:/root/github/af/.deploy_tmp_backend/
+
+          # Stop the backend service before replacing binary
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "systemctl stop af || true"
 
           # Make backend binary executable and swap in one move
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "chmod +x /root/github/af/.deploy_tmp_backend/backend && mv -f /root/github/af/.deploy_tmp_backend/backend /root/github/af/backend"
