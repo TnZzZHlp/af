@@ -1,4 +1,3 @@
-use crate::db::types::ApiType;
 use crate::db::{
     alias_targets::{
         self, AliasTargetDetail, AliasTargetRow, CreateAliasTargetParams, UpdateAliasTargetParams,
@@ -41,14 +40,6 @@ pub async fn delete_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
 }
 
 // Alias Targets
-
-pub async fn fetch_alias_target_details(
-    pool: &PgPool,
-    alias_name: &str,
-    api_type: ApiType,
-) -> anyhow::Result<Vec<AliasTargetDetail>> {
-    alias_targets::fetch_alias_target_details(pool, alias_name, api_type).await
-}
 
 pub async fn fetch_all_alias_target_details(
     pool: &PgPool,

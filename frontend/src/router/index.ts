@@ -38,6 +38,11 @@ const router = createRouter({
           name: "request-logs",
           component: () => import("@/pages/RequestLogsPage.vue"),
         },
+        {
+          path: "users",
+          name: "users",
+          component: () => import("@/pages/UsersPage.vue"),
+        },
       ],
     },
   ],

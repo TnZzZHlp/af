@@ -42,32 +42,6 @@ pub async fn list_aliases(
     Ok(aliases)
 }
 
-pub async fn fetch_alias(
-    pool: &PgPool,
-    name: &str,
-) -> anyhow::Result<Option<AliasRow>> {
-    let row = sqlx::query(
-        "SELECT id, name, enabled, created_at
-         FROM aliases
-         WHERE name = $1 AND enabled = true
-         LIMIT 1",
-    )
-    .bind(name)
-    .fetch_optional(pool)
-    .await?;
-
-    let Some(row) = row else {
-        return Ok(None);
-    };
-
-    Ok(Some(AliasRow {
-        id: row.try_get("id")?,
-        name: row.try_get("name")?,
-        enabled: row.try_get("enabled")?,
-        created_at: row.try_get("created_at")?,
-    }))
-}
-
 pub async fn get_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<AliasRow>> {
     let row = sqlx::query(
         "SELECT id, name, enabled, created_at

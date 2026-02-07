@@ -93,3 +93,32 @@ pub async fn update_password_hash(
 ) -> anyhow::Result<()> {
     users::update_password_hash(pool, user_id, password_hash).await
 }
+
+pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<User>> {
+    let users = users::list_users(pool).await?;
+    Ok(users.into_iter().map(|u| u.into()).collect())
+}
+
+pub async fn get_user(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<User>> {
+    let user = users::fetch_user_by_id(pool, id).await?;
+    Ok(user.map(|u| u.into()))
+}
+
+pub async fn update_user(
+    pool: &PgPool,
+    id: Uuid,
+    username: &str,
+    enabled: bool,
+) -> anyhow::Result<Option<User>> {
+    let user = users::update_user(pool, id, username, enabled).await?;
+    Ok(user.map(|u| u.into()))
+}
+
+pub async fn delete_user(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+    users::delete_user(pool, id).await
+}
+
+pub async fn change_password(pool: &PgPool, id: Uuid, password: &str) -> anyhow::Result<()> {
+    let password_hash = hash_password(password)?;
+    update_password_hash(pool, id, &password_hash).await
+}

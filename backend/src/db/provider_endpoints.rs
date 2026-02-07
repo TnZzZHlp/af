@@ -16,44 +16,6 @@ pub struct ProviderEndpointRow {
     pub created_at: OffsetDateTime,
 }
 
-pub async fn fetch_provider_endpoints(
-    pool: &PgPool,
-    provider_id: Uuid,
-    api_type: ApiType,
-) -> anyhow::Result<Vec<ProviderEndpointRow>> {
-    let rows = sqlx::query(
-        "SELECT
-            id,
-            provider_id,
-            api_type,
-            url,
-            enabled,
-            created_at
-         FROM provider_endpoints
-         WHERE provider_id = $1
-           AND api_type = $2
-           AND enabled = true",
-    )
-    .bind(provider_id)
-    .bind(api_type)
-    .fetch_all(pool)
-    .await?;
-
-    let mut endpoints = Vec::with_capacity(rows.len());
-    for row in rows {
-        endpoints.push(ProviderEndpointRow {
-            id: row.try_get("id")?,
-            provider_id: row.try_get("provider_id")?,
-            api_type: row.try_get("api_type")?,
-            url: row.try_get("url")?,
-            enabled: row.try_get("enabled")?,
-            created_at: row.try_get("created_at")?,
-        });
-    }
-
-    Ok(endpoints)
-}
-
 pub async fn list_endpoints_by_provider(
     pool: &PgPool,
     provider_id: Uuid,

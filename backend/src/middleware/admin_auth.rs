@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::{error::AppError, services::auth, state::AppState};
 
 #[derive(Clone, Copy, Debug)]
-pub struct AdminUserId(pub Uuid);
+pub struct AdminUserId(#[allow(dead_code)] pub Uuid);
 
 pub async fn admin_auth_middleware(
     State(state): State<AppState>,

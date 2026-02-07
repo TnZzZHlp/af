@@ -79,11 +79,3 @@ pub async fn fetch_model_whitelist(
 ) -> anyhow::Result<Vec<String>> {
     gateway_key_models::fetch_model_whitelist(pool, gateway_key_id).await
 }
-
-pub async fn is_model_allowed(
-    pool: &PgPool,
-    gateway_key_id: Uuid,
-    model: &str,
-) -> anyhow::Result<bool> {
-    gateway_key_models::is_model_allowed(pool, gateway_key_id, model).await
-}

@@ -63,24 +63,6 @@ pub struct RequestLogContext {
     pub response_content_type: Option<String>,
 }
 
-pub struct RequestLogInsert {
-    pub request_id: Uuid,
-    pub gateway_key_id: Option<Uuid>,
-    pub api_type: ApiType,
-    pub model: Option<String>,
-    pub alias: Option<String>,
-    pub provider: Option<String>,
-    pub endpoint: Option<String>,
-    pub status_code: Option<i32>,
-    pub latency_ms: Option<i32>,
-    pub client_ip: Option<String>,
-    pub user_agent: Option<String>,
-    pub request_body: Option<Vec<u8>>,
-    pub response_body: Option<Vec<u8>>,
-    pub request_content_type: Option<String>,
-    pub response_content_type: Option<String>,
-}
-
 pub async fn fetch_request_logs(
     pool: &PgPool,
     limit: i64,

@@ -18,8 +18,6 @@ pub enum AppError {
     Forbidden,
     #[error("not found")]
     NotFound,
-    #[error("conflict: {0}")]
-    Conflict(String),
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -36,7 +34,6 @@ impl IntoResponse for AppError {
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             AppError::Forbidden => (StatusCode::FORBIDDEN, self.to_string()),
             AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
-            AppError::Conflict(message) => (StatusCode::CONFLICT, message.clone()),
             AppError::Internal(err) => {
                 tracing::error!(error = %err, "internal error");
                 (

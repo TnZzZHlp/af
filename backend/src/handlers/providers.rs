@@ -173,7 +173,6 @@ pub async fn list_keys(
 pub struct CreateKeyRequest {
     pub name: Option<String>,
     pub key: String,
-    pub weight: Option<i32>,
 }
 
 pub async fn create_key(
@@ -186,7 +185,6 @@ pub async fn create_key(
         provider_id,
         payload.name,
         payload.key,
-        payload.weight,
     )
     .await?;
     Ok(Json(key))
@@ -195,7 +193,6 @@ pub async fn create_key(
 #[derive(Debug, Deserialize)]
 pub struct UpdateKeyRequest {
     pub name: Option<String>,
-    pub weight: Option<i32>,
     pub enabled: Option<bool>,
 }
 
@@ -208,7 +205,6 @@ pub async fn update_key(
         &state.pool,
         id,
         payload.name,
-        payload.weight,
         payload.enabled,
     )
     .await?

@@ -14,31 +14,6 @@ pub struct ProviderRow {
     pub created_at: OffsetDateTime,
 }
 
-pub async fn fetch_provider(pool: &PgPool, name: &str) -> anyhow::Result<Option<ProviderRow>> {
-    let row = sqlx::query(
-        "SELECT id, name, description, enabled, usage_count, created_at
-         FROM providers
-         WHERE name = $1 AND enabled = true
-         LIMIT 1",
-    )
-    .bind(name)
-    .fetch_optional(pool)
-    .await?;
-
-    let Some(row) = row else {
-        return Ok(None);
-    };
-
-    Ok(Some(ProviderRow {
-        id: row.try_get("id")?,
-        name: row.try_get("name")?,
-        description: row.try_get("description")?,
-        enabled: row.try_get("enabled")?,
-        usage_count: row.try_get("usage_count")?,
-        created_at: row.try_get("created_at")?,
-    }))
-}
-
 pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<ProviderRow>> {
     let row = sqlx::query(
         "SELECT id, name, description, enabled, usage_count, created_at

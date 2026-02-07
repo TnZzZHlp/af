@@ -8,6 +8,7 @@ import {
   Blocks,
   Route,
   Activity,
+  Users,
 } from "lucide-vue-next"
 
 import NavUser from '@/components/NavUser.vue'
@@ -57,6 +58,11 @@ const data = {
       title: "Request Logs",
       url: "/dashboard/request-logs",
       icon: Activity,
+    },
+    {
+      title: "Users",
+      url: "/dashboard/users",
+      icon: Users,
     },
   ],
 }

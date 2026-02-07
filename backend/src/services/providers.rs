@@ -115,7 +115,6 @@ pub async fn create_key(
     provider_id: Uuid,
     name: Option<String>,
     key: String,
-    weight: Option<i32>,
 ) -> anyhow::Result<ProviderKeyRow> {
     provider_keys::create_key(
         pool,
@@ -123,7 +122,6 @@ pub async fn create_key(
             provider_id,
             name,
             key,
-            weight,
         },
     )
     .await
@@ -133,7 +131,6 @@ pub async fn update_key(
     pool: &PgPool,
     id: Uuid,
     name: Option<String>,
-    weight: Option<i32>,
     enabled: Option<bool>,
 ) -> anyhow::Result<Option<ProviderKeyRow>> {
     provider_keys::update_key(
@@ -141,7 +138,6 @@ pub async fn update_key(
         id,
         UpdateKeyParams {
             name,
-            weight,
             enabled,
         },
     )
