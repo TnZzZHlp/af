@@ -79,6 +79,11 @@ pub fn app(state: AppState) -> Router {
             delete(handlers::aliases::delete_alias_target),
         );
 
+    let request_log_routes = Router::new().route(
+        "/request-logs",
+        get(handlers::request_logs::list_request_logs),
+    );
+
     let ai_routes = Router::new()
         .route(
             "/v1/chat/completions",
@@ -101,6 +106,7 @@ pub fn app(state: AppState) -> Router {
                     .merge(gateway_key_routes)
                     .merge(provider_routes)
                     .merge(alias_routes)
+                    .merge(request_log_routes)
                     .layer(axum_middleware::from_fn_with_state(
                         state.clone(),
                         middleware::admin_auth::admin_auth_middleware,

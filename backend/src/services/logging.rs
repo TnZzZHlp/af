@@ -2,7 +2,16 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::db::request_logs;
+pub use crate::db::request_logs::RequestLogRow;
 pub use crate::db::types::ApiType;
+
+pub async fn fetch_request_logs(
+    pool: &PgPool,
+    limit: i64,
+    offset: i64,
+) -> anyhow::Result<Vec<RequestLogRow>> {
+    request_logs::fetch_request_logs(pool, limit, offset).await
+}
 
 pub struct RequestLogContext {
     pub request_id: Uuid,

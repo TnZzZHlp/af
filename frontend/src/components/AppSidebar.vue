@@ -7,6 +7,7 @@ import {
   Key,
   Blocks,
   Route,
+  Activity,
 } from "lucide-vue-next"
 
 import NavUser from '@/components/NavUser.vue'
@@ -51,6 +52,11 @@ const data = {
       title: "Aliases",
       url: "/dashboard/aliases",
       icon: Route,
+    },
+    {
+      title: "Request Logs",
+      url: "/dashboard/request-logs",
+      icon: Activity,
     },
   ],
 }

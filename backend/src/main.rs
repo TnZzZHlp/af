@@ -9,15 +9,33 @@ mod state;
 
 use std::net::SocketAddr;
 
+use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
+use tracing_subscriber::EnvFilter;
 
 use crate::{config::load_config, services::openai::OpenAiService, state::AppState};
 
+#[derive(Debug, Parser)]
+#[command(name = "backend", version, about = "AI gateway backend")]
+struct Cli {
+    /// Log level for backend module (e.g. trace, debug, info, warn, error)
+    #[arg(long, default_value = "info")]
+    log_level: String,
+    /// Full tracing filter (overrides log_level)
+    #[arg(long)]
+    log_filter: Option<String>,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter("backend=debug,info")
-        .init();
+    let cli = Cli::parse();
+    let fallback_filter = cli
+        .log_filter
+        .unwrap_or_else(|| format!("backend={},info", cli.log_level));
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(fallback_filter));
+
+    tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
     let config = load_config()?;
     let pool = PgPoolOptions::new()

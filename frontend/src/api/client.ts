@@ -25,7 +25,7 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
       if (user.token) {
         requestHeaders.set("Authorization", `Bearer ${user.token}`);
       }
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }
