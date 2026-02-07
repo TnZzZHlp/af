@@ -15,9 +15,17 @@ pub async fn rate_limit_middleware(
     };
 
     let gateway_key_id = gateway_key_id.0;
-    match rate_limit::fetch_limits(&state.pool, gateway_key_id).await {
-        Ok((_rps, _rpm)) => {}
+    let (rps, rpm) = match rate_limit::fetch_limits(&state.pool, gateway_key_id).await {
+        Ok(limits) => limits,
         Err(err) => return AppError::Internal(err).into_response(),
+    };
+
+    let allowed = state
+        .rate_limiter
+        .check_and_consume(gateway_key_id, rps, rpm)
+        .await;
+    if !allowed {
+        return AppError::TooManyRequests.into_response();
     }
 
     next.run(req).await
