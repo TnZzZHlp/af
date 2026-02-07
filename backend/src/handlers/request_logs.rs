@@ -1,10 +1,13 @@
-use axum::{extract::{Path, Query, State}, Json};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
     error::{AppError, AppResult},
-    services::logging::{self, RequestLogRow, RequestLogSummary},
+    services::logging::{self, RequestLog, RequestLogSummary},
     state::AppState,
 };
 
@@ -29,7 +32,7 @@ pub async fn list_request_logs(
 pub async fn get_request_log(
     State(state): State<AppState>,
     Path(request_id): Path<Uuid>,
-) -> AppResult<Json<RequestLogRow>> {
+) -> AppResult<Json<RequestLog>> {
     let log = logging::fetch_request_log_detail(&state.pool, request_id).await?;
 
     match log {

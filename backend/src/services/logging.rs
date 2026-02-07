@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::db::request_logs;
-pub use crate::db::request_logs::RequestLogRow;
+pub use crate::db::request_logs::RequestLog;
 pub use crate::db::request_logs::RequestLogSummary;
 pub use crate::db::types::ApiType;
 
@@ -17,7 +17,7 @@ pub async fn fetch_request_logs(
 pub async fn fetch_request_log_detail(
     pool: &PgPool,
     request_id: Uuid,
-) -> anyhow::Result<Option<RequestLogRow>> {
+) -> anyhow::Result<Option<RequestLog>> {
     request_logs::fetch_request_log_detail(pool, request_id).await
 }
 

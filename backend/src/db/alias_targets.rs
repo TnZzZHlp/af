@@ -6,7 +6,7 @@ use uuid::Uuid;
 use super::types::ApiType;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AliasTargetRow {
+pub struct AliasTarget {
     pub id: Uuid,
     pub alias_id: Uuid,
     pub provider_id: Uuid,
@@ -91,7 +91,7 @@ pub struct CreateAliasTargetParams {
 pub async fn create_alias_target(
     pool: &PgPool,
     params: CreateAliasTargetParams,
-) -> anyhow::Result<AliasTargetRow> {
+) -> anyhow::Result<AliasTarget> {
     let row = sqlx::query!(
         "INSERT INTO alias_targets (alias_id, provider_id, model_id)
          VALUES ($1, $2, $3)
@@ -103,7 +103,7 @@ pub async fn create_alias_target(
     .fetch_one(pool)
     .await?;
 
-    Ok(AliasTargetRow {
+    Ok(AliasTarget {
         id: row.id,
         alias_id: row.alias_id,
         provider_id: row.provider_id,
@@ -123,7 +123,7 @@ pub async fn update_alias_target(
     pool: &PgPool,
     id: Uuid,
     params: UpdateAliasTargetParams,
-) -> anyhow::Result<Option<AliasTargetRow>> {
+) -> anyhow::Result<Option<AliasTarget>> {
     let row = sqlx::query!(
         "UPDATE alias_targets
          SET
@@ -144,7 +144,7 @@ pub async fn update_alias_target(
         return Ok(None);
     };
 
-    Ok(Some(AliasTargetRow {
+    Ok(Some(AliasTarget {
         id: row.id,
         alias_id: row.alias_id,
         provider_id: row.provider_id,

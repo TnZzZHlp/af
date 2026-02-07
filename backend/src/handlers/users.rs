@@ -1,13 +1,14 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use time;
+use uuid::Uuid;
 
 use crate::{
+    db::users::User,
     error::{AppError, AppResult},
     services::users,
     state::AppState,
@@ -41,8 +42,8 @@ pub struct UserResponse {
     pub password_updated_at: Option<time::OffsetDateTime>,
 }
 
-impl From<users::User> for UserResponse {
-    fn from(user: users::User) -> Self {
+impl From<User> for UserResponse {
+    fn from(user: User) -> Self {
         Self {
             id: user.id,
             username: user.username,

@@ -16,6 +16,8 @@ use crate::{
     services::{auth, logging, providers, routing},
 };
 
+use crate::db::provider_keys::{self, UpdateKeyParams};
+
 #[derive(Clone)]
 pub struct OpenAiService {
     pool: PgPool,
@@ -87,7 +89,7 @@ impl OpenAiService {
         let _ = providers::increment_usage_count(&self.pool, target.provider_id).await;
 
         tracing::debug!("fetching provider keys");
-        let provider_keys: Vec<routing::ProviderKeyRow> =
+        let provider_keys: Vec<routing::ProviderKey> =
             routing::fetch_provider_keys(&self.pool, target.provider_id).await?;
 
         let provider_key = provider_keys
@@ -96,7 +98,7 @@ impl OpenAiService {
 
         tracing::debug!(provider_key_id = %provider_key.id, "selected provider key");
 
-        let _ = crate::db::provider_keys::increment_usage_count(&self.pool, provider_key.id).await;
+        let _ = provider_keys::increment_usage_count(&self.pool, provider_key.id).await;
 
         payload_object.insert("model".to_string(), Value::String(target.model_id.clone()));
         let stream = payload_object
@@ -131,6 +133,31 @@ impl OpenAiService {
         let response = match response {
             Ok(response) => {
                 tracing::debug!(status = ?response.status(), "received upstream response");
+
+                if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+                    tracing::warn!(
+                        provider_key_id = %provider_key.id,
+                        provider_id = %target.provider_id,
+                        "upstream returned 401 Unauthorized, disabling provider key"
+                    );
+                    let pool = self.pool.clone();
+                    let key_id = provider_key.id;
+                    tokio::spawn(async move {
+                        if let Err(e) = provider_keys::update_key(
+                            &pool,
+                            key_id,
+                            UpdateKeyParams {
+                                name: None,
+                                enabled: Some(false),
+                            },
+                        )
+                        .await
+                        {
+                            tracing::error!(error = %e, key_id = %key_id, "failed to disable provider key");
+                        }
+                    });
+                }
+
                 response
             }
             Err(err) => {

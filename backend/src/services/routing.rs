@@ -19,7 +19,7 @@ pub struct AliasTargetDetail {
 }
 
 #[derive(Debug, Clone)]
-pub struct ProviderKeyRow {
+pub struct ProviderKey {
     pub id: Uuid,
     pub provider_id: Uuid,
     pub name: Option<String>,
@@ -58,11 +58,11 @@ pub async fn fetch_alias_target_details(
 pub async fn fetch_provider_keys(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderKeyRow>> {
+) -> anyhow::Result<Vec<ProviderKey>> {
     let rows = provider_keys::fetch_provider_keys(pool, provider_id).await?;
     let mut keys = Vec::with_capacity(rows.len());
     for row in rows {
-        keys.push(ProviderKeyRow {
+        keys.push(ProviderKey {
             id: row.id,
             provider_id: row.provider_id,
             name: row.name,

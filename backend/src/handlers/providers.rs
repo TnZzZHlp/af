@@ -1,12 +1,15 @@
 use axum::{
-    extract::{Path, Query, State},
     Json,
+    extract::{Path, Query, State},
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    db::{providers::ProviderRow, provider_endpoints::ProviderEndpointRow, provider_keys::ProviderKeyRow, types::ApiType},
+    db::{
+        provider_endpoints::ProviderEndpoint, provider_keys::ProviderKey, providers::Provider,
+        types::ApiType,
+    },
     error::{AppError, AppResult},
     services::providers,
     state::AppState,
@@ -31,7 +34,7 @@ fn default_page_size() -> i64 {
 pub async fn list_providers(
     State(state): State<AppState>,
     Query(query): Query<ListProvidersQuery>,
-) -> AppResult<Json<Vec<ProviderRow>>> {
+) -> AppResult<Json<Vec<Provider>>> {
     let providers = providers::list_providers(&state.pool, query.page, query.page_size).await?;
     Ok(Json(providers))
 }
@@ -45,15 +48,16 @@ pub struct CreateProviderRequest {
 pub async fn create_provider(
     State(state): State<AppState>,
     Json(payload): Json<CreateProviderRequest>,
-) -> AppResult<Json<ProviderRow>> {
-    let provider = providers::create_provider(&state.pool, payload.name, payload.description).await?;
+) -> AppResult<Json<Provider>> {
+    let provider =
+        providers::create_provider(&state.pool, payload.name, payload.description).await?;
     Ok(Json(provider))
 }
 
 pub async fn get_provider(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> AppResult<Json<ProviderRow>> {
+) -> AppResult<Json<Provider>> {
     let provider = providers::get_provider(&state.pool, id)
         .await?
         .ok_or(AppError::NotFound)?;
@@ -71,7 +75,7 @@ pub async fn update_provider(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateProviderRequest>,
-) -> AppResult<Json<ProviderRow>> {
+) -> AppResult<Json<Provider>> {
     let provider = providers::update_provider(
         &state.pool,
         id,
@@ -84,10 +88,7 @@ pub async fn update_provider(
     Ok(Json(provider))
 }
 
-pub async fn delete_provider(
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-) -> AppResult<()> {
+pub async fn delete_provider(State(state): State<AppState>, Path(id): Path<Uuid>) -> AppResult<()> {
     if providers::delete_provider(&state.pool, id).await? {
         Ok(())
     } else {
@@ -100,7 +101,7 @@ pub async fn delete_provider(
 pub async fn list_endpoints(
     State(state): State<AppState>,
     Path(provider_id): Path<Uuid>,
-) -> AppResult<Json<Vec<ProviderEndpointRow>>> {
+) -> AppResult<Json<Vec<ProviderEndpoint>>> {
     let endpoints = providers::list_endpoints_by_provider(&state.pool, provider_id).await?;
     Ok(Json(endpoints))
 }
@@ -115,14 +116,9 @@ pub async fn create_endpoint(
     State(state): State<AppState>,
     Path(provider_id): Path<Uuid>,
     Json(payload): Json<CreateEndpointRequest>,
-) -> AppResult<Json<ProviderEndpointRow>> {
-    let endpoint = providers::create_endpoint(
-        &state.pool,
-        provider_id,
-        payload.api_type,
-        payload.url,
-    )
-    .await?;
+) -> AppResult<Json<ProviderEndpoint>> {
+    let endpoint =
+        providers::create_endpoint(&state.pool, provider_id, payload.api_type, payload.url).await?;
     Ok(Json(endpoint))
 }
 
@@ -136,15 +132,10 @@ pub async fn update_endpoint(
     State(state): State<AppState>,
     Path((_provider_id, id)): Path<(Uuid, Uuid)>,
     Json(payload): Json<UpdateEndpointRequest>,
-) -> AppResult<Json<ProviderEndpointRow>> {
-    let endpoint = providers::update_endpoint(
-        &state.pool,
-        id,
-        payload.url,
-        payload.enabled,
-    )
-    .await?
-    .ok_or(AppError::NotFound)?;
+) -> AppResult<Json<ProviderEndpoint>> {
+    let endpoint = providers::update_endpoint(&state.pool, id, payload.url, payload.enabled)
+        .await?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(endpoint))
 }
 
@@ -164,7 +155,7 @@ pub async fn delete_endpoint(
 pub async fn list_keys(
     State(state): State<AppState>,
     Path(provider_id): Path<Uuid>,
-) -> AppResult<Json<Vec<ProviderKeyRow>>> {
+) -> AppResult<Json<Vec<ProviderKey>>> {
     let keys = providers::list_keys_by_provider(&state.pool, provider_id).await?;
     Ok(Json(keys))
 }
@@ -179,14 +170,8 @@ pub async fn create_key(
     State(state): State<AppState>,
     Path(provider_id): Path<Uuid>,
     Json(payload): Json<CreateKeyRequest>,
-) -> AppResult<Json<ProviderKeyRow>> {
-    let key = providers::create_key(
-        &state.pool,
-        provider_id,
-        payload.name,
-        payload.key,
-    )
-    .await?;
+) -> AppResult<Json<ProviderKey>> {
+    let key = providers::create_key(&state.pool, provider_id, payload.name, payload.key).await?;
     Ok(Json(key))
 }
 
@@ -200,15 +185,10 @@ pub async fn update_key(
     State(state): State<AppState>,
     Path((_provider_id, id)): Path<(Uuid, Uuid)>,
     Json(payload): Json<UpdateKeyRequest>,
-) -> AppResult<Json<ProviderKeyRow>> {
-    let key = providers::update_key(
-        &state.pool,
-        id,
-        payload.name,
-        payload.enabled,
-    )
-    .await?
-    .ok_or(AppError::NotFound)?;
+) -> AppResult<Json<ProviderKey>> {
+    let key = providers::update_key(&state.pool, id, payload.name, payload.enabled)
+        .await?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(key))
 }
 

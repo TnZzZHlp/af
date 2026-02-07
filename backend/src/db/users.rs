@@ -2,7 +2,7 @@ use sqlx::{PgPool, types::time};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
-pub struct UserRow {
+pub struct User {
     pub id: Uuid,
     pub username: String,
     pub password_hash: String,
@@ -11,10 +11,7 @@ pub struct UserRow {
     pub created_at: time::OffsetDateTime,
 }
 
-pub async fn fetch_user_by_username(
-    pool: &PgPool,
-    username: &str,
-) -> anyhow::Result<Option<UserRow>> {
+pub async fn fetch_user_by_username(pool: &PgPool, username: &str) -> anyhow::Result<Option<User>> {
     let row = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at FROM users WHERE username = $1",
         username
@@ -22,7 +19,7 @@ pub async fn fetch_user_by_username(
     .fetch_optional(pool)
     .await?;
 
-    Ok(row.map(|row| UserRow {
+    Ok(row.map(|row| User {
         id: row.id,
         username: row.username,
         password_hash: row.password_hash,
@@ -36,7 +33,7 @@ pub async fn insert_user(
     pool: &PgPool,
     username: &str,
     password_hash: &str,
-) -> anyhow::Result<UserRow> {
+) -> anyhow::Result<User> {
     let row = sqlx::query!(
         "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, password_hash, password_updated_at, enabled, created_at",
         username,
@@ -45,7 +42,7 @@ pub async fn insert_user(
     .fetch_one(pool)
     .await?;
 
-    Ok(UserRow {
+    Ok(User {
         id: row.id,
         username: row.username,
         password_hash: row.password_hash,
@@ -71,7 +68,7 @@ pub async fn update_password_hash(
     Ok(())
 }
 
-pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<UserRow>> {
+pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<User>> {
     let rows = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at
          FROM users
@@ -82,7 +79,7 @@ pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<UserRow>> {
 
     let mut users = Vec::new();
     for row in rows {
-        users.push(UserRow {
+        users.push(User {
             id: row.id,
             username: row.username,
             password_hash: row.password_hash,
@@ -95,7 +92,7 @@ pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<UserRow>> {
     Ok(users)
 }
 
-pub async fn fetch_user_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<UserRow>> {
+pub async fn fetch_user_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<User>> {
     let row = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at
          FROM users
@@ -105,7 +102,7 @@ pub async fn fetch_user_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<
     .fetch_optional(pool)
     .await?;
 
-    Ok(row.map(|row| UserRow {
+    Ok(row.map(|row| User {
         id: row.id,
         username: row.username,
         password_hash: row.password_hash,
@@ -120,7 +117,7 @@ pub async fn update_user(
     id: Uuid,
     username: &str,
     enabled: bool,
-) -> anyhow::Result<Option<UserRow>> {
+) -> anyhow::Result<Option<User>> {
     let row = sqlx::query!(
         "UPDATE users
          SET username = $1, enabled = $2
@@ -133,7 +130,7 @@ pub async fn update_user(
     .fetch_optional(pool)
     .await?;
 
-    Ok(row.map(|row| UserRow {
+    Ok(row.map(|row| User {
         id: row.id,
         username: row.username,
         password_hash: row.password_hash,

@@ -6,7 +6,7 @@ use uuid::Uuid;
 use super::types::ApiType;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProviderEndpointRow {
+pub struct ProviderEndpoint {
     pub id: Uuid,
     pub provider_id: Uuid,
     pub api_type: ApiType,
@@ -19,7 +19,7 @@ pub struct ProviderEndpointRow {
 pub async fn list_endpoints_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderEndpointRow>> {
+) -> anyhow::Result<Vec<ProviderEndpoint>> {
     let rows = sqlx::query!(
         "SELECT
             id,
@@ -38,7 +38,7 @@ pub async fn list_endpoints_by_provider(
 
     let mut endpoints = Vec::with_capacity(rows.len());
     for row in rows {
-        endpoints.push(ProviderEndpointRow {
+        endpoints.push(ProviderEndpoint {
             id: row.id,
             provider_id: row.provider_id,
             api_type: row.api_type,
@@ -60,7 +60,7 @@ pub struct CreateEndpointParams {
 pub async fn create_endpoint(
     pool: &PgPool,
     params: CreateEndpointParams,
-) -> anyhow::Result<ProviderEndpointRow> {
+) -> anyhow::Result<ProviderEndpoint> {
     let row = sqlx::query!(
         "INSERT INTO provider_endpoints (provider_id, api_type, url)
          VALUES ($1, $2::api_type, $3)
@@ -72,7 +72,7 @@ pub async fn create_endpoint(
     .fetch_one(pool)
     .await?;
 
-    Ok(ProviderEndpointRow {
+    Ok(ProviderEndpoint {
         id: row.id,
         provider_id: row.provider_id,
         api_type: row.api_type,
@@ -91,7 +91,7 @@ pub async fn update_endpoint(
     pool: &PgPool,
     id: Uuid,
     params: UpdateEndpointParams,
-) -> anyhow::Result<Option<ProviderEndpointRow>> {
+) -> anyhow::Result<Option<ProviderEndpoint>> {
     let row = sqlx::query!(
         "UPDATE provider_endpoints
          SET url = COALESCE($1, url),
@@ -109,7 +109,7 @@ pub async fn update_endpoint(
         return Ok(None);
     };
 
-    Ok(Some(ProviderEndpointRow {
+    Ok(Some(ProviderEndpoint {
         id: row.id,
         provider_id: row.provider_id,
         api_type: row.api_type,

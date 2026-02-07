@@ -5,7 +5,7 @@ use uuid::Uuid;
 use super::types::ApiType;
 
 #[derive(Debug, sqlx::FromRow, Serialize)]
-pub struct RequestLogRow {
+pub struct RequestLog {
     pub request_id: Uuid,
     pub gateway_key_id: Option<Uuid>,
     pub api_type: ApiType,
@@ -102,9 +102,9 @@ pub async fn fetch_request_logs(
 pub async fn fetch_request_log_detail(
     pool: &PgPool,
     request_id: Uuid,
-) -> anyhow::Result<Option<RequestLogRow>> {
+) -> anyhow::Result<Option<RequestLog>> {
     let log = sqlx::query_as!(
-        RequestLogRow,
+        RequestLog,
         r#"
         SELECT 
             request_id,

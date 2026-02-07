@@ -1,14 +1,14 @@
 use axum::{
-    extract::{Path, Query, State},
     Json,
+    extract::{Path, Query, State},
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
     db::{
-        aliases::AliasRow,
-        alias_targets::{AliasTargetRow, AliasTargetDetail},
+        alias_targets::{AliasTarget, AliasTargetDetail},
+        aliases::Alias,
     },
     error::{AppError, AppResult},
     services::aliases,
@@ -34,7 +34,7 @@ fn default_page_size() -> i64 {
 pub async fn list_aliases(
     State(state): State<AppState>,
     Query(query): Query<ListAliasesQuery>,
-) -> AppResult<Json<Vec<AliasRow>>> {
+) -> AppResult<Json<Vec<Alias>>> {
     let aliases = aliases::list_aliases(&state.pool, query.page, query.page_size).await?;
     Ok(Json(aliases))
 }
@@ -47,19 +47,15 @@ pub struct CreateAliasRequest {
 pub async fn create_alias(
     State(state): State<AppState>,
     Json(payload): Json<CreateAliasRequest>,
-) -> AppResult<Json<AliasRow>> {
-    let alias = aliases::create_alias(
-        &state.pool,
-        payload.name,
-    )
-    .await?;
+) -> AppResult<Json<Alias>> {
+    let alias = aliases::create_alias(&state.pool, payload.name).await?;
     Ok(Json(alias))
 }
 
 pub async fn get_alias(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> AppResult<Json<AliasRow>> {
+) -> AppResult<Json<Alias>> {
     let alias = aliases::get_alias(&state.pool, id)
         .await?
         .ok_or(AppError::NotFound)?;
@@ -76,22 +72,14 @@ pub async fn update_alias(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdateAliasRequest>,
-) -> AppResult<Json<AliasRow>> {
-    let alias = aliases::update_alias(
-        &state.pool,
-        id,
-        payload.name,
-        payload.enabled,
-    )
-    .await?
-    .ok_or(AppError::NotFound)?;
+) -> AppResult<Json<Alias>> {
+    let alias = aliases::update_alias(&state.pool, id, payload.name, payload.enabled)
+        .await?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(alias))
 }
 
-pub async fn delete_alias(
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-) -> AppResult<()> {
+pub async fn delete_alias(State(state): State<AppState>, Path(id): Path<Uuid>) -> AppResult<()> {
     if aliases::delete_alias(&state.pool, id).await? {
         Ok(())
     } else {
@@ -119,14 +107,10 @@ pub async fn create_alias_target(
     State(state): State<AppState>,
     Path(alias_id): Path<Uuid>,
     Json(payload): Json<CreateAliasTargetRequest>,
-) -> AppResult<Json<AliasTargetRow>> {
-    let target = aliases::create_alias_target(
-        &state.pool,
-        alias_id,
-        payload.provider_id,
-        payload.model_id,
-    )
-    .await?;
+) -> AppResult<Json<AliasTarget>> {
+    let target =
+        aliases::create_alias_target(&state.pool, alias_id, payload.provider_id, payload.model_id)
+            .await?;
     Ok(Json(target))
 }
 
@@ -141,7 +125,7 @@ pub async fn update_alias_target(
     State(state): State<AppState>,
     Path((_alias_id, target_id)): Path<(Uuid, Uuid)>,
     Json(payload): Json<UpdateAliasTargetRequest>,
-) -> AppResult<Json<AliasTargetRow>> {
+) -> AppResult<Json<AliasTarget>> {
     let target = aliases::update_alias_target(
         &state.pool,
         target_id,

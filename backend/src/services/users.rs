@@ -2,33 +2,10 @@ use argon2::password_hash::{
     PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng,
 };
 use argon2::{Algorithm, Argon2, Params, Version};
-use sqlx::{PgPool, types::time};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::users::{self, UserRow, fetch_user_by_username};
-
-#[derive(Debug, Clone)]
-pub struct User {
-    pub id: Uuid,
-    pub username: String,
-    pub password_hash: String,
-    pub password_updated_at: Option<time::OffsetDateTime>,
-    pub enabled: bool,
-    pub created_at: time::OffsetDateTime,
-}
-
-impl From<UserRow> for User {
-    fn from(row: UserRow) -> Self {
-        User {
-            id: row.id,
-            username: row.username,
-            password_hash: row.password_hash,
-            password_updated_at: row.password_updated_at,
-            enabled: row.enabled,
-            created_at: row.created_at,
-        }
-    }
-}
+use crate::db::users::{self, User, fetch_user_by_username};
 
 pub async fn create_user(pool: &PgPool, username: &str, password: &str) -> anyhow::Result<User> {
     let password_hash = hash_password(password)?;
@@ -45,7 +22,7 @@ pub async fn authenticate_user(
     };
 
     if verify_password(password, &user.password_hash)? {
-        Ok(Some(user.into()))
+        Ok(Some(user))
     } else {
         Ok(None)
     }
@@ -96,12 +73,12 @@ pub async fn update_password_hash(
 
 pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<User>> {
     let users = users::list_users(pool).await?;
-    Ok(users.into_iter().map(|u| u.into()).collect())
+    Ok(users.into_iter().collect())
 }
 
 pub async fn get_user(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<User>> {
     let user = users::fetch_user_by_id(pool, id).await?;
-    Ok(user.map(|u| u.into()))
+    Ok(user)
 }
 
 pub async fn update_user(
@@ -111,7 +88,7 @@ pub async fn update_user(
     enabled: bool,
 ) -> anyhow::Result<Option<User>> {
     let user = users::update_user(pool, id, username, enabled).await?;
-    Ok(user.map(|u| u.into()))
+    Ok(user)
 }
 
 pub async fn delete_user(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {

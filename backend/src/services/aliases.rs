@@ -1,28 +1,21 @@
 use crate::db::{
     alias_targets::{
-        self, AliasTargetDetail, AliasTargetRow, CreateAliasTargetParams, UpdateAliasTargetParams,
+        self, AliasTarget, AliasTargetDetail, CreateAliasTargetParams, UpdateAliasTargetParams,
     },
-    aliases::{self, AliasRow, CreateAliasParams, UpdateAliasParams},
+    aliases::{self, Alias, CreateAliasParams, UpdateAliasParams},
 };
 use sqlx::PgPool;
 use uuid::Uuid;
 
-pub async fn list_aliases(
-    pool: &PgPool,
-    page: i64,
-    page_size: i64,
-) -> anyhow::Result<Vec<AliasRow>> {
+pub async fn list_aliases(pool: &PgPool, page: i64, page_size: i64) -> anyhow::Result<Vec<Alias>> {
     aliases::list_aliases(pool, page, page_size).await
 }
 
-pub async fn create_alias(
-    pool: &PgPool,
-    name: String,
-) -> anyhow::Result<AliasRow> {
+pub async fn create_alias(pool: &PgPool, name: String) -> anyhow::Result<Alias> {
     aliases::create_alias(pool, CreateAliasParams { name }).await
 }
 
-pub async fn get_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<AliasRow>> {
+pub async fn get_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Alias>> {
     aliases::get_alias(pool, id).await
 }
 
@@ -31,7 +24,7 @@ pub async fn update_alias(
     id: Uuid,
     name: Option<String>,
     enabled: Option<bool>,
-) -> anyhow::Result<Option<AliasRow>> {
+) -> anyhow::Result<Option<Alias>> {
     aliases::update_alias(pool, id, UpdateAliasParams { name, enabled }).await
 }
 
@@ -53,7 +46,7 @@ pub async fn create_alias_target(
     alias_id: Uuid,
     provider_id: Uuid,
     model_id: String,
-) -> anyhow::Result<AliasTargetRow> {
+) -> anyhow::Result<AliasTarget> {
     alias_targets::create_alias_target(
         pool,
         CreateAliasTargetParams {
@@ -71,7 +64,7 @@ pub async fn update_alias_target(
     provider_id: Option<Uuid>,
     model_id: Option<String>,
     enabled: Option<bool>,
-) -> anyhow::Result<Option<AliasTargetRow>> {
+) -> anyhow::Result<Option<AliasTarget>> {
     alias_targets::update_alias_target(
         pool,
         id,

@@ -1,8 +1,8 @@
 use crate::db::types::ApiType;
 use crate::db::{
-    provider_endpoints::{self, CreateEndpointParams, ProviderEndpointRow, UpdateEndpointParams},
-    provider_keys::{self, CreateKeyParams, ProviderKeyRow, UpdateKeyParams},
-    providers::{self, CreateProviderParams, ProviderRow, UpdateProviderParams},
+    provider_endpoints::{self, CreateEndpointParams, ProviderEndpoint, UpdateEndpointParams},
+    provider_keys::{self, CreateKeyParams, ProviderKey, UpdateKeyParams},
+    providers::{self, CreateProviderParams, Provider, UpdateProviderParams},
 };
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -11,7 +11,7 @@ pub async fn list_providers(
     pool: &PgPool,
     page: i64,
     page_size: i64,
-) -> anyhow::Result<Vec<ProviderRow>> {
+) -> anyhow::Result<Vec<Provider>> {
     providers::list_providers(pool, page, page_size).await
 }
 
@@ -19,11 +19,11 @@ pub async fn create_provider(
     pool: &PgPool,
     name: String,
     description: Option<String>,
-) -> anyhow::Result<ProviderRow> {
+) -> anyhow::Result<Provider> {
     providers::create_provider(pool, CreateProviderParams { name, description }).await
 }
 
-pub async fn get_provider(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<ProviderRow>> {
+pub async fn get_provider(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Provider>> {
     providers::fetch_provider_by_id(pool, id).await
 }
 
@@ -33,7 +33,7 @@ pub async fn update_provider(
     name: Option<String>,
     description: Option<String>,
     enabled: Option<bool>,
-) -> anyhow::Result<Option<ProviderRow>> {
+) -> anyhow::Result<Option<Provider>> {
     providers::update_provider(
         pool,
         id,
@@ -55,7 +55,7 @@ pub async fn delete_provider(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
 pub async fn list_endpoints_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderEndpointRow>> {
+) -> anyhow::Result<Vec<ProviderEndpoint>> {
     provider_endpoints::list_endpoints_by_provider(pool, provider_id).await
 }
 
@@ -64,7 +64,7 @@ pub async fn create_endpoint(
     provider_id: Uuid,
     api_type: ApiType,
     url: String,
-) -> anyhow::Result<ProviderEndpointRow> {
+) -> anyhow::Result<ProviderEndpoint> {
     provider_endpoints::create_endpoint(
         pool,
         CreateEndpointParams {
@@ -81,16 +81,8 @@ pub async fn update_endpoint(
     id: Uuid,
     url: Option<String>,
     enabled: Option<bool>,
-) -> anyhow::Result<Option<ProviderEndpointRow>> {
-    provider_endpoints::update_endpoint(
-        pool,
-        id,
-        UpdateEndpointParams {
-            url,
-            enabled,
-        },
-    )
-    .await
+) -> anyhow::Result<Option<ProviderEndpoint>> {
+    provider_endpoints::update_endpoint(pool, id, UpdateEndpointParams { url, enabled }).await
 }
 
 pub async fn delete_endpoint(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
@@ -106,7 +98,7 @@ pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()
 pub async fn list_keys_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderKeyRow>> {
+) -> anyhow::Result<Vec<ProviderKey>> {
     provider_keys::list_keys_by_provider(pool, provider_id).await
 }
 
@@ -115,7 +107,7 @@ pub async fn create_key(
     provider_id: Uuid,
     name: Option<String>,
     key: String,
-) -> anyhow::Result<ProviderKeyRow> {
+) -> anyhow::Result<ProviderKey> {
     provider_keys::create_key(
         pool,
         CreateKeyParams {
@@ -132,16 +124,8 @@ pub async fn update_key(
     id: Uuid,
     name: Option<String>,
     enabled: Option<bool>,
-) -> anyhow::Result<Option<ProviderKeyRow>> {
-    provider_keys::update_key(
-        pool,
-        id,
-        UpdateKeyParams {
-            name,
-            enabled,
-        },
-    )
-    .await
+) -> anyhow::Result<Option<ProviderKey>> {
+    provider_keys::update_key(pool, id, UpdateKeyParams { name, enabled }).await
 }
 
 pub async fn delete_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {

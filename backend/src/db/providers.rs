@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProviderRow {
+pub struct Provider {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
@@ -14,7 +14,7 @@ pub struct ProviderRow {
     pub created_at: OffsetDateTime,
 }
 
-pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<ProviderRow>> {
+pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Provider>> {
     let row = sqlx::query!(
         "SELECT id, name, description, enabled, usage_count, created_at
          FROM providers
@@ -28,7 +28,7 @@ pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Opt
         return Ok(None);
     };
 
-    Ok(Some(ProviderRow {
+    Ok(Some(Provider {
         id: row.id,
         name: row.name,
         description: row.description,
@@ -42,7 +42,7 @@ pub async fn list_providers(
     pool: &PgPool,
     page: i64,
     page_size: i64,
-) -> anyhow::Result<Vec<ProviderRow>> {
+) -> anyhow::Result<Vec<Provider>> {
     let offset = (page - 1) * page_size;
     let rows = sqlx::query!(
         "SELECT id, name, description, enabled, usage_count, created_at
@@ -57,7 +57,7 @@ pub async fn list_providers(
 
     let mut providers = Vec::with_capacity(rows.len());
     for row in rows {
-        providers.push(ProviderRow {
+        providers.push(Provider {
             id: row.id,
             name: row.name,
             description: row.description,
@@ -78,7 +78,7 @@ pub struct CreateProviderParams {
 pub async fn create_provider(
     pool: &PgPool,
     params: CreateProviderParams,
-) -> anyhow::Result<ProviderRow> {
+) -> anyhow::Result<Provider> {
     let row = sqlx::query!(
         "INSERT INTO providers (name, description)
          VALUES ($1, $2)
@@ -89,7 +89,7 @@ pub async fn create_provider(
     .fetch_one(pool)
     .await?;
 
-    Ok(ProviderRow {
+    Ok(Provider {
         id: row.id,
         name: row.name,
         description: row.description,
@@ -109,7 +109,7 @@ pub async fn update_provider(
     pool: &PgPool,
     id: Uuid,
     params: UpdateProviderParams,
-) -> anyhow::Result<Option<ProviderRow>> {
+) -> anyhow::Result<Option<Provider>> {
     let row = sqlx::query!(
         "UPDATE providers
          SET name = COALESCE($1, name),
@@ -129,7 +129,7 @@ pub async fn update_provider(
         return Ok(None);
     };
 
-    Ok(Some(ProviderRow {
+    Ok(Some(Provider {
         id: row.id,
         name: row.name,
         description: row.description,

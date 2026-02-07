@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProviderKeyRow {
+pub struct ProviderKey {
     pub id: Uuid,
     pub provider_id: Uuid,
     pub name: Option<String>,
@@ -23,7 +23,7 @@ pub struct ProviderKeyRow {
 pub async fn fetch_provider_keys(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderKeyRow>> {
+) -> anyhow::Result<Vec<ProviderKey>> {
     let rows = sqlx::query!(
         "SELECT
             id,
@@ -48,7 +48,7 @@ pub async fn fetch_provider_keys(
 
     let mut keys = Vec::with_capacity(rows.len());
     for row in rows {
-        keys.push(ProviderKeyRow {
+        keys.push(ProviderKey {
             id: row.id,
             provider_id: row.provider_id,
             name: row.name,
@@ -68,7 +68,7 @@ pub async fn fetch_provider_keys(
 pub async fn list_keys_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderKeyRow>> {
+) -> anyhow::Result<Vec<ProviderKey>> {
     let rows = sqlx::query!(
         "SELECT
             id,
@@ -91,7 +91,7 @@ pub async fn list_keys_by_provider(
 
     let mut keys = Vec::with_capacity(rows.len());
     for row in rows {
-        keys.push(ProviderKeyRow {
+        keys.push(ProviderKey {
             id: row.id,
             provider_id: row.provider_id,
             name: row.name,
@@ -114,7 +114,7 @@ pub struct CreateKeyParams {
     pub key: String,
 }
 
-pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Result<ProviderKeyRow> {
+pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Result<ProviderKey> {
     let row = sqlx::query!(
         "INSERT INTO provider_keys (provider_id, name, key)
          VALUES ($1, $2, $3)
@@ -126,7 +126,7 @@ pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Resul
     .fetch_one(pool)
     .await?;
 
-    Ok(ProviderKeyRow {
+    Ok(ProviderKey {
         id: row.id,
         provider_id: row.provider_id,
         name: row.name,
@@ -149,7 +149,7 @@ pub async fn update_key(
     pool: &PgPool,
     id: Uuid,
     params: UpdateKeyParams,
-) -> anyhow::Result<Option<ProviderKeyRow>> {
+) -> anyhow::Result<Option<ProviderKey>> {
     let row = sqlx::query!(
         "UPDATE provider_keys
          SET name = COALESCE($1, name),
@@ -167,7 +167,7 @@ pub async fn update_key(
         return Ok(None);
     };
 
-    Ok(Some(ProviderKeyRow {
+    Ok(Some(ProviderKey {
         id: row.id,
         provider_id: row.provider_id,
         name: row.name,
