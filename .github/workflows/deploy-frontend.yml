@@ -60,6 +60,6 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top/* && mkdir -p /www/ai.tnzzz.top"
 
           # Upload built frontend files
-          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r frontend/build/client/* root@$SERVER_IP:/www/ai.tnzzz.top/
+          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r frontend/dist/* root@$SERVER_IP:/www/ai.tnzzz.top/
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
