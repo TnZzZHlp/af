@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT model FROM gateway_key_models WHERE gateway_key_id = $1 ORDER BY model",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "model",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d2d0d805ef28f87452d6ce4d8f8095809cff61cc1b3ba9a28da5680f8ea65a5b"
+}

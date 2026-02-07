@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO provider_endpoints (provider_id, api_type, url)\n         VALUES ($1, $2::api_type, $3)\n         RETURNING id, provider_id, api_type as \"api_type: ApiType\", url, enabled, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "provider_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "api_type: ApiType",
+        "type_info": {
+          "Custom": {
+            "name": "api_type",
+            "kind": {
+              "Enum": [
+                "openai_chat_completions",
+                "openai_responses",
+                "anthropic_messages"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "api_type",
+            "kind": {
+              "Enum": [
+                "openai_chat_completions",
+                "openai_responses",
+                "anthropic_messages"
+              ]
+            }
+          }
+        },
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a40b6ac4a556aabbee60a3acb5c6e630fda6c03629e00d66e6004d646e143aba"
+}

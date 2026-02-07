@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT ON (p.usage_count, p.id)\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            pe.id AS provider_endpoint_id,\n            pe.url AS endpoint_url,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN providers p\n           ON p.id = at.provider_id AND p.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true\n         WHERE a.name = $1 AND a.enabled = true\n         ORDER BY p.usage_count ASC, p.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "alias_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "alias_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "alias_target_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "provider_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "provider_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "provider_usage_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "provider_endpoint_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "endpoint_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "model_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        {
+          "Custom": {
+            "name": "api_type",
+            "kind": {
+              "Enum": [
+                "openai_chat_completions",
+                "openai_responses",
+                "anthropic_messages"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "58e16dc3ce0fe5041752341b73339c991490fdf0f9200114fd2742ea8f20da94"
+}

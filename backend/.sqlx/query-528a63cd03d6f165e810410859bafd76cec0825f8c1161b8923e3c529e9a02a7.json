@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT rate_limit_rps, rate_limit_rpm\n         FROM gateway_keys\n         WHERE id = $1 AND enabled = true\n         LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rate_limit_rps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "rate_limit_rpm",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "528a63cd03d6f165e810410859bafd76cec0825f8c1161b8923e3c529e9a02a7"
+}

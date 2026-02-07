@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE providers SET usage_count = usage_count + 1 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e99c4259c21b4c4df7cbbba28a8eb1666aa62a601e1a45ddfda1e6afe4ae8e59"
+}

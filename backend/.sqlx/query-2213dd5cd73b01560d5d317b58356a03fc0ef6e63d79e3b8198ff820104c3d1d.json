@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            id,\n            provider_id,\n            name,\n            key,\n            usage_count,\n            enabled,\n            fail_count,\n            circuit_open_until,\n            last_fail_at,\n            created_at\n         FROM provider_keys\n         WHERE provider_id = $1\n           AND enabled = true\n           AND (circuit_open_until IS NULL OR circuit_open_until <= now())\n         ORDER BY usage_count ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "provider_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "usage_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "fail_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "circuit_open_until",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "last_fail_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "2213dd5cd73b01560d5d317b58356a03fc0ef6e63d79e3b8198ff820104c3d1d"
+}

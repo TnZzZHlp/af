@@ -1,0 +1,63 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            id,\n            provider_id,\n            api_type as \"api_type: ApiType\",\n            url,\n            enabled,\n            created_at\n         FROM provider_endpoints\n         WHERE provider_id = $1\n         ORDER BY created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "provider_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "api_type: ApiType",
+        "type_info": {
+          "Custom": {
+            "name": "api_type",
+            "kind": {
+              "Enum": [
+                "openai_chat_completions",
+                "openai_responses",
+                "anthropic_messages"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "138041c691f02425d3492d96d3893e587153d93bff67d599cdc3b5813c27f0b6"
+}

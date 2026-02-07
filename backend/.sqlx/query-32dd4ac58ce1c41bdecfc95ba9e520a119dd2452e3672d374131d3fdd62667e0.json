@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO gateway_keys (name, key, rate_limit_rps, rate_limit_rpm)\n         VALUES ($1, $2, $3, $4)\n         RETURNING id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "rate_limit_rps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "rate_limit_rpm",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "32dd4ac58ce1c41bdecfc95ba9e520a119dd2452e3672d374131d3fdd62667e0"
+}
