@@ -79,10 +79,15 @@ pub fn app(state: AppState) -> Router {
             delete(handlers::aliases::delete_alias_target),
         );
 
-    let request_log_routes = Router::new().route(
-        "/request-logs",
-        get(handlers::request_logs::list_request_logs),
-    );
+    let request_log_routes = Router::new()
+        .route(
+            "/request-logs",
+            get(handlers::request_logs::list_request_logs),
+        )
+        .route(
+            "/request-logs/{id}",
+            get(handlers::request_logs::get_request_log),
+        );
 
     let ai_routes = Router::new()
         .route(

@@ -21,6 +21,27 @@ pub struct RequestLogRow {
     pub response_body: Option<Vec<u8>>,
     pub request_content_type: Option<String>,
     pub response_content_type: Option<String>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: time::OffsetDateTime,
+}
+
+#[derive(Debug, sqlx::FromRow, Serialize)]
+pub struct RequestLogSummary {
+    pub request_id: Uuid,
+    pub gateway_key_id: Option<Uuid>,
+    pub api_type: ApiType,
+    pub model: Option<String>,
+    pub alias: Option<String>,
+    pub provider: Option<String>,
+    pub endpoint: Option<String>,
+    pub status_code: Option<i32>,
+    pub latency_ms: Option<i32>,
+    pub client_ip: Option<String>, // Cast from inet
+    pub user_agent: Option<String>,
+    // Bodies excluded
+    pub request_content_type: Option<String>,
+    pub response_content_type: Option<String>,
+    #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,
 }
 
@@ -64,8 +85,43 @@ pub async fn fetch_request_logs(
     pool: &PgPool,
     limit: i64,
     offset: i64,
-) -> anyhow::Result<Vec<RequestLogRow>> {
+) -> anyhow::Result<Vec<RequestLogSummary>> {
     let logs = sqlx::query_as!(
+        RequestLogSummary,
+        r#"
+        SELECT 
+            request_id,
+            gateway_key_id,
+            api_type as "api_type: ApiType",
+            model,
+            alias,
+            provider,
+            endpoint,
+            status_code,
+            latency_ms,
+            client_ip::text as client_ip,
+            user_agent,
+            request_content_type,
+            response_content_type,
+            created_at
+        FROM request_logs
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
+        "#,
+        limit,
+        offset
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(logs)
+}
+
+pub async fn fetch_request_log_detail(
+    pool: &PgPool,
+    request_id: Uuid,
+) -> anyhow::Result<Option<RequestLogRow>> {
+    let log = sqlx::query_as!(
         RequestLogRow,
         r#"
         SELECT 
@@ -86,16 +142,14 @@ pub async fn fetch_request_logs(
             response_content_type,
             created_at
         FROM request_logs
-        ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2
+        WHERE request_id = $1
         "#,
-        limit,
-        offset
+        request_id
     )
-    .fetch_all(pool)
+    .fetch_optional(pool)
     .await?;
 
-    Ok(logs)
+    Ok(log)
 }
 
 pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyhow::Result<()> {

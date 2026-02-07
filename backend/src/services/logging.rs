@@ -3,14 +3,22 @@ use uuid::Uuid;
 
 use crate::db::request_logs;
 pub use crate::db::request_logs::RequestLogRow;
+pub use crate::db::request_logs::RequestLogSummary;
 pub use crate::db::types::ApiType;
 
 pub async fn fetch_request_logs(
     pool: &PgPool,
     limit: i64,
     offset: i64,
-) -> anyhow::Result<Vec<RequestLogRow>> {
+) -> anyhow::Result<Vec<RequestLogSummary>> {
     request_logs::fetch_request_logs(pool, limit, offset).await
+}
+
+pub async fn fetch_request_log_detail(
+    pool: &PgPool,
+    request_id: Uuid,
+) -> anyhow::Result<Option<RequestLogRow>> {
+    request_logs::fetch_request_log_detail(pool, request_id).await
 }
 
 pub struct RequestLogContext {
