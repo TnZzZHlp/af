@@ -2,7 +2,9 @@ use axum::{
     Router, middleware as axum_middleware,
     routing::{delete, get, post, put},
 };
-use tower_http::trace::{DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tower_http::trace::{
+    DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer,
+};
 use tracing::Level;
 
 use crate::{handlers, middleware, state::AppState};
@@ -95,7 +97,10 @@ pub fn app(state: AppState) -> Router {
         .route("/users/{id}", get(handlers::users::get_user))
         .route("/users/{id}", put(handlers::users::update_user))
         .route("/users/{id}", delete(handlers::users::delete_user))
-        .route("/users/{id}/password", put(handlers::users::update_password));
+        .route(
+            "/users/{id}/password",
+            put(handlers::users::update_password),
+        );
 
     let ai_routes = Router::new()
         .route(
@@ -134,6 +139,7 @@ pub fn app(state: AppState) -> Router {
         ))
         .layer(
             TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().include_headers(true))
                 .on_request(DefaultOnRequest::new().level(Level::INFO))
                 .on_response(DefaultOnResponse::new().level(Level::INFO))
                 .on_failure(DefaultOnFailure::new().level(Level::INFO)),
