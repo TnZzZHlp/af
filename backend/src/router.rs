@@ -139,10 +139,14 @@ pub fn app(state: AppState) -> Router {
         ))
         .layer(
             TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::new().include_headers(true))
-                .on_request(DefaultOnRequest::new().level(Level::INFO))
+                .make_span_with(
+                    DefaultMakeSpan::new()
+                        .include_headers(true)
+                        .level(Level::INFO),
+                )
+                .on_request(DefaultOnRequest::new().level(Level::DEBUG))
                 .on_response(DefaultOnResponse::new().level(Level::INFO))
-                .on_failure(DefaultOnFailure::new().level(Level::INFO)),
+                .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
         )
         .with_state(state)
 }
