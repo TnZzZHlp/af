@@ -40,8 +40,8 @@ pub async fn update_gateway_key(
     id: Uuid,
     name: Option<String>,
     enabled: Option<bool>,
-    rate_limit_rps: Option<i32>,
-    rate_limit_rpm: Option<i32>,
+    rate_limit_rps: Option<Option<i32>>,
+    rate_limit_rpm: Option<Option<i32>>,
 ) -> anyhow::Result<Option<GatewayKey>> {
     let params = gateway_keys::UpdateGatewayKeyParams {
         name,

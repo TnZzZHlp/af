@@ -71,8 +71,8 @@ pub async fn get(
 pub struct UpdateGatewayKeyRequest {
     pub name: Option<String>,
     pub enabled: Option<bool>,
-    pub rate_limit_rps: Option<i32>,
-    pub rate_limit_rpm: Option<i32>,
+    pub rate_limit_rps: Option<Option<i32>>,
+    pub rate_limit_rpm: Option<Option<i32>>,
 }
 
 pub async fn update(
