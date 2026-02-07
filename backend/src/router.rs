@@ -2,6 +2,7 @@ use axum::{
     Router, middleware as axum_middleware,
     routing::{delete, get, post, put},
 };
+use tower_http::trace::TraceLayer;
 
 use crate::{handlers, middleware, state::AppState};
 
@@ -52,19 +53,6 @@ pub fn app(state: AppState) -> Router {
         .route(
             "/providers/{id}/keys/{key_id}",
             delete(handlers::providers::delete_key),
-        )
-        .route("/providers/{id}/models", get(handlers::providers::list_models))
-        .route(
-            "/providers/{id}/models",
-            post(handlers::providers::create_model),
-        )
-        .route(
-            "/providers/{id}/models/{model_id}",
-            put(handlers::providers::update_model),
-        )
-        .route(
-            "/providers/{id}/models/{model_id}",
-            delete(handlers::providers::delete_model),
         );
 
     let alias_routes = Router::new()
@@ -73,10 +61,6 @@ pub fn app(state: AppState) -> Router {
         .route("/aliases/{id}", get(handlers::aliases::get_alias))
         .route("/aliases/{id}", put(handlers::aliases::update_alias))
         .route("/aliases/{id}", delete(handlers::aliases::delete_alias))
-        .route(
-            "/aliases/{id}/targets",
-            get(handlers::aliases::list_alias_targets),
-        )
         .route(
             "/aliases/{id}/targets/details",
             get(handlers::aliases::list_alias_target_details),
@@ -129,5 +113,6 @@ pub fn app(state: AppState) -> Router {
             state.clone(),
             middleware::request_log::request_log_middleware,
         ))
+        .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

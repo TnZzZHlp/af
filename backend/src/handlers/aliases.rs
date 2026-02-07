@@ -9,7 +9,6 @@ use crate::{
     db::{
         aliases::AliasRow,
         alias_targets::{AliasTargetRow, AliasTargetDetail},
-        types::ApiType,
     },
     error::{AppError, AppResult},
     services::aliases,
@@ -102,14 +101,6 @@ pub async fn delete_alias(
 
 // Alias Targets
 
-pub async fn list_alias_targets(
-    State(state): State<AppState>,
-    Path(alias_id): Path<Uuid>,
-) -> AppResult<Json<Vec<AliasTargetRow>>> {
-    let targets = aliases::fetch_alias_targets(&state.pool, alias_id).await?;
-    Ok(Json(targets))
-}
-
 pub async fn list_alias_target_details(
     State(state): State<AppState>,
     Path(alias_id): Path<Uuid>,
@@ -121,7 +112,7 @@ pub async fn list_alias_target_details(
 #[derive(Debug, Deserialize)]
 pub struct CreateAliasTargetRequest {
     pub provider_id: Uuid,
-    pub model_id: Uuid,
+    pub model_id: String,
 }
 
 pub async fn create_alias_target(
@@ -141,6 +132,8 @@ pub async fn create_alias_target(
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateAliasTargetRequest {
+    pub provider_id: Option<Uuid>,
+    pub model_id: Option<String>,
     pub enabled: Option<bool>,
 }
 
@@ -152,6 +145,8 @@ pub async fn update_alias_target(
     let target = aliases::update_alias_target(
         &state.pool,
         target_id,
+        payload.provider_id,
+        payload.model_id,
         payload.enabled,
     )
     .await?

@@ -2,7 +2,6 @@ pub mod alias_targets;
 pub mod aliases;
 pub mod gateway_key_models;
 pub mod gateway_keys;
-pub mod models;
 pub mod provider_endpoints;
 pub mod provider_keys;
 pub mod providers;

@@ -42,13 +42,6 @@ pub async fn delete_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
 
 // Alias Targets
 
-pub async fn fetch_alias_targets(
-    pool: &PgPool,
-    alias_id: Uuid,
-) -> anyhow::Result<Vec<AliasTargetRow>> {
-    alias_targets::fetch_alias_targets(pool, alias_id).await
-}
-
 pub async fn fetch_alias_target_details(
     pool: &PgPool,
     alias_name: &str,
@@ -68,7 +61,7 @@ pub async fn create_alias_target(
     pool: &PgPool,
     alias_id: Uuid,
     provider_id: Uuid,
-    model_id: Uuid,
+    model_id: String,
 ) -> anyhow::Result<AliasTargetRow> {
     alias_targets::create_alias_target(
         pool,
@@ -84,9 +77,20 @@ pub async fn create_alias_target(
 pub async fn update_alias_target(
     pool: &PgPool,
     id: Uuid,
+    provider_id: Option<Uuid>,
+    model_id: Option<String>,
     enabled: Option<bool>,
 ) -> anyhow::Result<Option<AliasTargetRow>> {
-    alias_targets::update_alias_target(pool, id, UpdateAliasTargetParams { enabled }).await
+    alias_targets::update_alias_target(
+        pool,
+        id,
+        UpdateAliasTargetParams {
+            provider_id,
+            model_id,
+            enabled,
+        },
+    )
+    .await
 }
 
 pub async fn delete_alias_target(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {

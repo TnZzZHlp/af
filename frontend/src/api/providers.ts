@@ -31,15 +31,6 @@ export interface ProviderKey {
   created_at: string;
 }
 
-export interface ProviderModel {
-  id: string;
-  provider_id: string;
-  api_type: ApiType;
-  name: string;
-  enabled: boolean;
-  created_at: string;
-}
-
 export interface ListProvidersParams {
   page?: number;
   page_size?: number;
@@ -72,16 +63,6 @@ export interface CreateKeyRequest {
 }
 
 export interface UpdateKeyRequest {
-  name?: string;
-  enabled?: boolean;
-}
-
-export interface CreateModelRequest {
-  api_type: ApiType;
-  name: string;
-}
-
-export interface UpdateModelRequest {
   name?: string;
   enabled?: boolean;
 }
@@ -166,31 +147,6 @@ export async function updateKey(providerId: string, keyId: string, payload: Upda
 
 export async function deleteKey(providerId: string, keyId: string): Promise<void> {
   await requestJson<void>(`/providers/${providerId}/keys/${keyId}`, {
-    method: "DELETE",
-  });
-}
-
-// Model API
-export async function listModels(providerId: string): Promise<ProviderModel[]> {
-  return requestJson<ProviderModel[]>(`/providers/${providerId}/models`);
-}
-
-export async function createModel(providerId: string, payload: CreateModelRequest): Promise<ProviderModel> {
-  return requestJson<ProviderModel>(`/providers/${providerId}/models`, {
-    method: "POST",
-    body: payload,
-  });
-}
-
-export async function updateModel(providerId: string, modelId: string, payload: UpdateModelRequest): Promise<ProviderModel> {
-  return requestJson<ProviderModel>(`/providers/${providerId}/models/${modelId}`, {
-    method: "PUT",
-    body: payload,
-  });
-}
-
-export async function deleteModel(providerId: string, modelId: string): Promise<void> {
-  await requestJson<void>(`/providers/${providerId}/models/${modelId}`, {
     method: "DELETE",
   });
 }

@@ -23,6 +23,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Plus,
   Trash2,
   Edit,
@@ -32,6 +38,8 @@ import {
   EyeOff,
   Loader2,
   MoreVertical,
+  ShieldCheck,
+  Activity,
 } from "lucide-vue-next";
 import {
   DropdownMenu,
@@ -141,92 +149,136 @@ function formatDate(dateStr: string) {
       </Button>
     </div>
 
-    <div v-if="store.error" class="rounded-md bg-destructive/15 p-4 text-destructive text-sm">
-      {{ store.error }}
+    <div v-if="store.error"
+      class="rounded-md bg-destructive/15 p-4 text-destructive text-sm flex justify-between items-center">
+      <span>{{ store.error }}</span>
+      <Button variant="ghost" size="sm" @click="store.clearError">Dismiss</Button>
     </div>
 
     <div class="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead class="w-7.5"></TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>API Key</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Rate Limits</TableHead>
             <TableHead>Created At</TableHead>
             <TableHead class="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow v-if="store.loading && store.keys.length === 0">
-            <TableCell colspan="6" class="h-24 text-center">
+            <TableCell colspan="5" class="h-24 text-center">
               <Loader2 class="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
             </TableCell>
           </TableRow>
           <TableRow v-else-if="store.keys.length === 0">
-            <TableCell colspan="6" class="h-24 text-center text-muted-foreground">
+            <TableCell colspan="5" class="h-24 text-center text-muted-foreground">
               No API keys found.
             </TableCell>
           </TableRow>
-          <TableRow v-for="key in store.keys" :key="key.id">
-            <TableCell class="font-medium">
-              {{ key.name || 'Unnamed Key' }}
-              <div class="text-xs text-muted-foreground font-mono">{{ key.id }}</div>
-            </TableCell>
-            <TableCell>
-              <div class="flex items-center gap-2">
-                <code class="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold">
-                  {{ visibleKeys[key.id] ? key.key : '••••••••••••••••' }}
-                </code>
-                <Button variant="ghost" size="icon" class="h-8 w-8" @click="toggleKeyVisibility(key.id)">
-                  <Eye v-if="!visibleKeys[key.id]" class="h-4 w-4" />
-                  <EyeOff v-else class="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" class="h-8 w-8" @click="copyToClipboard(key.key, key.id)">
-                  <Check v-if="copiedId === key.id" class="h-4 w-4 text-green-500" />
-                  <Copy v-else class="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge 
-                :variant="key.enabled ? 'default' : 'secondary'"
-                class="cursor-pointer"
-                @click="toggleEnabled(key)"
-              >
-                {{ key.enabled ? 'Active' : 'Disabled' }}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div class="text-xs space-y-1">
-                <div v-if="key.rate_limit_rps">{{ key.rate_limit_rps }} RPS</div>
-                <div v-if="key.rate_limit_rpm">{{ key.rate_limit_rpm }} RPM</div>
-                <div v-if="!key.rate_limit_rps && !key.rate_limit_rpm" class="text-muted-foreground italic">No limits</div>
-              </div>
-            </TableCell>
-            <TableCell class="text-sm">
-              {{ formatDate(key.created_at) }}
-            </TableCell>
-            <TableCell class="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical class="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem @click="openEditSheet(key)">
-                    <Edit class="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem class="text-destructive" @click="handleDelete(key.id)">
-                    <Trash2 class="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
+
+          <template v-for="key in store.keys" :key="key.id">
+            <TableRow>
+              <TableCell></TableCell>
+              <TableCell class="font-medium">
+                {{ key.name || 'Unnamed Key' }}
+                <div class="text-xs text-muted-foreground font-mono">{{ key.id }}</div>
+              </TableCell>
+              <TableCell>
+                <Badge :variant="key.enabled ? 'default' : 'secondary'" class="cursor-pointer"
+                  @click="toggleEnabled(key)">
+                  {{ key.enabled ? 'Active' : 'Disabled' }}
+                </Badge>
+              </TableCell>
+              <TableCell class="text-sm">
+                {{ formatDate(key.created_at) }}
+              </TableCell>
+              <TableCell class="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical class="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem @click="openEditSheet(key)">
+                      <Edit class="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem class="text-destructive" @click="handleDelete(key.id)">
+                      <Trash2 class="mr-2 h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell colspan="5" class="p-0 border-t-0">
+                <Accordion type="single" collapsible>
+                  <AccordionItem :value="key.id" class="border-0">
+                    <AccordionTrigger class="px-8 py-2 text-xs text-muted-foreground hover:no-underline">
+                      View Key & Details
+                    </AccordionTrigger>
+                    <AccordionContent class="px-8 pb-6">
+                      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-4">
+
+                        <!-- Key Information -->
+                        <div class="space-y-4">
+                          <h3 class="text-sm font-semibold flex items-center gap-2">
+                            <ShieldCheck class="h-4 w-4 text-primary" />
+                            Key Details
+                          </h3>
+                          <div class="rounded-md border bg-muted/30 p-4">
+                            <div class="flex items-center gap-2">
+                              <code
+                                class="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold flex-1">
+                                {{ visibleKeys[key.id] ? key.key : '••••••••••••••••' }}
+                              </code>
+                              <Button variant="ghost" size="icon" class="h-8 w-8" @click="toggleKeyVisibility(key.id)">
+                                <Eye v-if="!visibleKeys[key.id]" class="h-4 w-4" />
+                                <EyeOff v-else class="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" class="h-8 w-8"
+                                @click="copyToClipboard(key.key, key.id)">
+                                <Check v-if="copiedId === key.id" class="h-4 w-4 text-green-500" />
+                                <Copy v-else class="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <p class="text-xs text-muted-foreground mt-2">
+                              Use this key to authenticate requests to the AI Gateway.
+                            </p>
+                          </div>
+                        </div>
+
+                        <!-- Configuration -->
+                        <div class="space-y-4">
+                          <h3 class="text-sm font-semibold flex items-center gap-2">
+                            <Activity class="h-4 w-4 text-primary" />
+                            Configuration
+                          </h3>
+                          <div class="rounded-md border bg-muted/30 p-4">
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span class="text-muted-foreground">Requests / Second:</span>
+                                <div class="font-medium mt-1">{{ key.rate_limit_rps || 'Unlimited' }}</div>
+                              </div>
+                              <div>
+                                <span class="text-muted-foreground">Requests / Minute:</span>
+                                <div class="font-medium mt-1">{{ key.rate_limit_rpm || 'Unlimited' }}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </TableCell>
+            </TableRow>
+          </template>
         </TableBody>
       </Table>
     </div>
@@ -237,7 +289,8 @@ function formatDate(dateStr: string) {
           <SheetHeader class="px-6 mb-6">
             <SheetTitle>{{ isEditing ? 'Edit API Key' : 'Create API Key' }}</SheetTitle>
             <SheetDescription>
-              {{ isEditing ? 'Update the details for this API key.' : 'Create a new API key to access the AI Gateway.' }}
+              {{ isEditing ? 'Update the details for this API key.' : 'Create a new API key to access the AI Gateway.'
+              }}
             </SheetDescription>
           </SheetHeader>
           <div class="grid flex-1 auto-rows-min gap-6 px-6 overflow-y-auto">

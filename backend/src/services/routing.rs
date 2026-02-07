@@ -2,21 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::db::types::ApiType;
-use crate::db::{alias_targets, aliases, provider_keys};
-
-#[derive(Debug, Clone)]
-pub struct AliasRow {
-    pub id: Uuid,
-    pub name: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct AliasTargetRow {
-    pub id: Uuid,
-    pub alias_id: Uuid,
-    pub provider_id: Uuid,
-    pub model_id: Uuid,
-}
+use crate::db::{alias_targets, provider_keys};
 
 #[derive(Debug, Clone)]
 pub struct AliasTargetDetail {
@@ -28,8 +14,7 @@ pub struct AliasTargetDetail {
     pub provider_usage_count: i64,
     pub provider_endpoint_id: Option<Uuid>,
     pub endpoint_url: Option<String>,
-    pub model_id: Uuid,
-    pub model_name: String,
+    pub model_id: String,
 }
 
 #[derive(Debug, Clone)]
@@ -43,39 +28,6 @@ pub struct ProviderKeyRow {
     pub fail_count: i32,
     pub circuit_open_until: Option<sqlx::types::time::OffsetDateTime>,
     pub last_fail_at: Option<sqlx::types::time::OffsetDateTime>,
-}
-
-pub async fn fetch_alias(
-    pool: &PgPool,
-    name: &str,
-) -> anyhow::Result<Option<AliasRow>> {
-    let row = match aliases::fetch_alias(pool, name).await? {
-        Some(row) => row,
-        None => return Ok(None),
-    };
-
-    Ok(Some(AliasRow {
-        id: row.id,
-        name: row.name,
-    }))
-}
-
-pub async fn fetch_alias_targets(
-    pool: &PgPool,
-    alias_id: Uuid,
-) -> anyhow::Result<Vec<AliasTargetRow>> {
-    let rows = alias_targets::fetch_alias_targets(pool, alias_id).await?;
-    let mut targets = Vec::with_capacity(rows.len());
-    for row in rows {
-        targets.push(AliasTargetRow {
-            id: row.id,
-            alias_id: row.alias_id,
-            provider_id: row.provider_id,
-            model_id: row.model_id,
-        });
-    }
-
-    Ok(targets)
 }
 
 pub async fn fetch_alias_target_details(
@@ -96,7 +48,6 @@ pub async fn fetch_alias_target_details(
             provider_endpoint_id: row.provider_endpoint_id,
             endpoint_url: row.endpoint_url,
             model_id: row.model_id,
-            model_name: row.model_name,
         });
     }
 

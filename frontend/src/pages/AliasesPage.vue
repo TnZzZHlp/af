@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useAliasesStore } from "@/stores/aliases";
+import { useProvidersStore } from "@/stores/providers";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -42,10 +43,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { ApiType } from "@/api/providers";
 import type { Alias, AliasTargetDetail } from "@/api/aliases";
 
 const store = useAliasesStore();
+const providersStore = useProvidersStore();
 
 const isAliasSheetOpen = ref(false);
 const isEditingAlias = ref(false);
@@ -68,6 +69,7 @@ const targetForm = ref({
 
 onMounted(() => {
   store.fetchAliases();
+  providersStore.fetchProviders();
 });
 
 function openCreateAliasSheet() {
@@ -141,8 +143,10 @@ async function handleTargetSubmit() {
   if (!currentAliasId.value) return;
 
   if (isEditingTarget.value && editingTargetId.value) {
-    // Only enabled is usually updatable for targets now, but let's keep basic structure
-    await store.patchTarget(currentAliasId.value, editingTargetId.value, {});
+    await store.patchTarget(currentAliasId.value, editingTargetId.value, {
+      provider_id: targetForm.value.provider_id,
+      model_id: targetForm.value.model_id,
+    });
   } else {
     await store.addTarget(currentAliasId.value, {
         provider_id: targetForm.value.provider_id,
@@ -279,8 +283,6 @@ function formatDate(dateStr: string) {
                               <TableRow>
                                 <TableHead>Provider</TableHead>
                                 <TableHead>Model</TableHead>
-                                <TableHead>Endpoint URL</TableHead>
-                                <TableHead>API Type</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead class="text-right">Actions</TableHead>
                               </TableRow>
@@ -288,11 +290,7 @@ function formatDate(dateStr: string) {
                             <TableBody>
                               <TableRow v-for="target in store.targets[alias.id]" :key="target.alias_target_id">
                                 <TableCell>{{ target.provider_name }}</TableCell>
-                                <TableCell>{{ target.model_name }}</TableCell>
-                                <TableCell class="max-w-[200px] truncate" :title="target.endpoint_url || 'N/A'">
-                                  {{ target.endpoint_url || 'N/A' }}
-                                </TableCell>
-                                <TableCell>{{ target.api_type?.split('_').pop() || '-' }}</TableCell>
+                                <TableCell>{{ target.model_id }}</TableCell>
                                 <TableCell>
                                   <div class="h-2 w-2 rounded-full cursor-pointer"
                                     :class="target.enabled ? 'bg-green-500' : 'bg-gray-400'"
@@ -312,7 +310,7 @@ function formatDate(dateStr: string) {
                                 </TableCell>
                               </TableRow>
                               <TableRow v-if="!store.targets[alias.id]?.length">
-                                <TableCell colspan="6" class="text-center py-6 text-muted-foreground italic">
+                                <TableCell colspan="4" class="text-center py-6 text-muted-foreground italic">
                                   No targets configured
                                 </TableCell>
                               </TableRow>
@@ -371,13 +369,23 @@ function formatDate(dateStr: string) {
             </SheetDescription>
           </SheetHeader>
           <div class="grid flex-1 auto-rows-min gap-6 px-6 overflow-y-auto">
-            <div class="grid gap-2" v-if="!isEditingTarget">
-              <Label for="target-provider-id">Provider ID</Label>
-              <Input id="target-provider-id" v-model="targetForm.provider_id" placeholder="UUID of Provider" />
+            <div class="grid gap-2">
+              <Label for="target-provider-id">Provider</Label>
+              <Select v-model="targetForm.provider_id">
+                <SelectTrigger id="target-provider-id">
+                  <SelectValue placeholder="Select a provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="provider in providersStore.providers" :key="provider.id" :value="provider.id">
+                    {{ provider.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div class="grid gap-2" v-if="!isEditingTarget">
+            <div class="grid gap-2">
               <Label for="target-model-id">Model ID</Label>
-              <Input id="target-model-id" v-model="targetForm.model_id" placeholder="UUID of Model" />
+              <Input id="target-model-id" v-model="targetForm.model_id" placeholder="e.g. gpt-4o" />
+              <p class="text-xs text-muted-foreground">Enter the model identifier used by the provider.</p>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">

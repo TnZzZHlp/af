@@ -1,5 +1,4 @@
 import { requestJson } from "./client";
-import type { ApiType } from "./providers";
 
 export interface Alias {
   id: string;
@@ -24,9 +23,8 @@ export interface AliasTargetDetail extends AliasTarget {
   provider_name: string;
   provider_usage_count: number;
   provider_endpoint_id?: string;
-  endpoint_url: string;
-  model_name: string;
-  api_type: ApiType;
+  endpoint_url?: string;
+  // api_type is no longer returned in detail list
 }
 
 export interface ListAliasesParams {
@@ -49,6 +47,8 @@ export interface CreateAliasTargetRequest {
 }
 
 export interface UpdateAliasTargetRequest {
+  provider_id?: string;
+  model_id?: string;
   enabled?: boolean;
 }
 
@@ -91,14 +91,21 @@ export async function listAliasTargetDetails(aliasId: string): Promise<AliasTarg
   return requestJson<AliasTargetDetail[]>(`/aliases/${aliasId}/targets/details`);
 }
 
-export async function createAliasTarget(aliasId: string, payload: CreateAliasTargetRequest): Promise<AliasTarget> {
+export async function createAliasTarget(
+  aliasId: string,
+  payload: CreateAliasTargetRequest,
+): Promise<AliasTarget> {
   return requestJson<AliasTarget>(`/aliases/${aliasId}/targets`, {
     method: "POST",
     body: payload,
   });
 }
 
-export async function updateAliasTarget(aliasId: string, targetId: string, payload: UpdateAliasTargetRequest): Promise<AliasTarget> {
+export async function updateAliasTarget(
+  aliasId: string,
+  targetId: string,
+  payload: UpdateAliasTargetRequest,
+): Promise<AliasTarget> {
   return requestJson<AliasTarget>(`/aliases/${aliasId}/targets/${targetId}`, {
     method: "PUT",
     body: payload,

@@ -6,7 +6,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    db::{providers::ProviderRow, provider_endpoints::ProviderEndpointRow, provider_keys::ProviderKeyRow, models::ModelRow, types::ApiType},
+    db::{providers::ProviderRow, provider_endpoints::ProviderEndpointRow, provider_keys::ProviderKeyRow, types::ApiType},
     error::{AppError, AppResult},
     services::providers,
     state::AppState,
@@ -221,70 +221,6 @@ pub async fn delete_key(
     Path((_provider_id, id)): Path<(Uuid, Uuid)>,
 ) -> AppResult<()> {
     if providers::delete_key(&state.pool, id).await? {
-        Ok(())
-    } else {
-        Err(AppError::NotFound)
-    }
-}
-
-// Models
-
-pub async fn list_models(
-    State(state): State<AppState>,
-    Path(provider_id): Path<Uuid>,
-) -> AppResult<Json<Vec<ModelRow>>> {
-    let models = providers::list_models_by_provider(&state.pool, provider_id).await?;
-    Ok(Json(models))
-}
-
-#[derive(Debug, Deserialize)]
-pub struct CreateModelRequest {
-    pub api_type: ApiType,
-    pub name: String,
-}
-
-pub async fn create_model(
-    State(state): State<AppState>,
-    Path(provider_id): Path<Uuid>,
-    Json(payload): Json<CreateModelRequest>,
-) -> AppResult<Json<ModelRow>> {
-    let model = providers::create_model(
-        &state.pool,
-        provider_id,
-        payload.api_type,
-        payload.name,
-    )
-    .await?;
-    Ok(Json(model))
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UpdateModelRequest {
-    pub name: Option<String>,
-    pub enabled: Option<bool>,
-}
-
-pub async fn update_model(
-    State(state): State<AppState>,
-    Path((_provider_id, id)): Path<(Uuid, Uuid)>,
-    Json(payload): Json<UpdateModelRequest>,
-) -> AppResult<Json<ModelRow>> {
-    let model = providers::update_model(
-        &state.pool,
-        id,
-        payload.name,
-        payload.enabled,
-    )
-    .await?
-    .ok_or(AppError::NotFound)?;
-    Ok(Json(model))
-}
-
-pub async fn delete_model(
-    State(state): State<AppState>,
-    Path((_provider_id, id)): Path<(Uuid, Uuid)>,
-) -> AppResult<()> {
-    if providers::delete_model(&state.pool, id).await? {
         Ok(())
     } else {
         Err(AppError::NotFound)

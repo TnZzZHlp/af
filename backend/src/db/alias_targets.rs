@@ -10,7 +10,7 @@ pub struct AliasTargetRow {
     pub id: Uuid,
     pub alias_id: Uuid,
     pub provider_id: Uuid,
-    pub model_id: Uuid,
+    pub model_id: String,
     pub enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -18,6 +18,7 @@ pub struct AliasTargetRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AliasTargetDetail {
+    pub id: Uuid,
     pub alias_id: Uuid,
     pub alias_name: String,
     pub alias_target_id: Uuid,
@@ -26,39 +27,33 @@ pub struct AliasTargetDetail {
     pub provider_usage_count: i64,
     pub provider_endpoint_id: Option<Uuid>,
     pub endpoint_url: Option<String>,
-    pub model_id: Uuid,
-    pub model_name: String,
-    pub api_type: ApiType,
+    pub model_id: String,
+    pub enabled: bool,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
 }
-
-// ... existing code ...
 
 pub async fn fetch_all_alias_target_details(
     pool: &PgPool,
     alias_id: Uuid,
 ) -> anyhow::Result<Vec<AliasTargetDetail>> {
     let rows = sqlx::query(
-        "SELECT DISTINCT ON (p.usage_count, p.id)
+        "SELECT
+            at.id,
             a.id AS alias_id,
             a.name AS alias_name,
             at.id AS alias_target_id,
             p.id AS provider_id,
             p.name AS provider_name,
             p.usage_count AS provider_usage_count,
-            pe.id AS provider_endpoint_id,
-            pe.url AS endpoint_url,
-            m.id AS model_id,
-            m.name AS model_name,
-            m.api_type
+            at.model_id,
+            at.enabled,
+            at.created_at
          FROM aliases a
          JOIN alias_targets at
            ON at.alias_id = a.id
          JOIN providers p
            ON p.id = at.provider_id
-         JOIN models m
-           ON m.id = at.model_id
-         LEFT JOIN provider_endpoints pe
-           ON pe.provider_id = p.id AND pe.api_type = m.api_type AND pe.enabled = true
          WHERE a.id = $1
          ORDER BY p.usage_count ASC, p.id",
     )
@@ -69,56 +64,28 @@ pub async fn fetch_all_alias_target_details(
     let mut details = Vec::with_capacity(rows.len());
     for row in rows {
         details.push(AliasTargetDetail {
+            id: row.try_get("id")?,
             alias_id: row.try_get("alias_id")?,
             alias_name: row.try_get("alias_name")?,
             alias_target_id: row.try_get("alias_target_id")?,
             provider_id: row.try_get("provider_id")?,
             provider_name: row.try_get("provider_name")?,
             provider_usage_count: row.try_get("provider_usage_count")?,
-            provider_endpoint_id: row.try_get("provider_endpoint_id").ok(),
-            endpoint_url: row.try_get("endpoint_url").ok(),
-            model_id: row.try_get("model_id")?,
-            model_name: row.try_get("model_name")?,
-            api_type: row.try_get("api_type")?,
-        });
-    }
-
-    Ok(details)
-}
-
-pub async fn fetch_alias_targets(
-    pool: &PgPool,
-    alias_id: Uuid,
-) -> anyhow::Result<Vec<AliasTargetRow>> {
-    let rows = sqlx::query(
-        "SELECT id, alias_id, provider_id, model_id, enabled, created_at
-         FROM alias_targets
-         WHERE alias_id = $1
-         ORDER BY created_at DESC",
-    )
-    .bind(alias_id)
-    .fetch_all(pool)
-    .await?;
-
-    let mut targets = Vec::with_capacity(rows.len());
-    for row in rows {
-        targets.push(AliasTargetRow {
-            id: row.try_get("id")?,
-            alias_id: row.try_get("alias_id")?,
-            provider_id: row.try_get("provider_id")?,
+            provider_endpoint_id: None,
+            endpoint_url: None,
             model_id: row.try_get("model_id")?,
             enabled: row.try_get("enabled")?,
             created_at: row.try_get("created_at")?,
         });
     }
 
-    Ok(targets)
+    Ok(details)
 }
 
 pub struct CreateAliasTargetParams {
     pub alias_id: Uuid,
     pub provider_id: Uuid,
-    pub model_id: Uuid,
+    pub model_id: String,
 }
 
 pub async fn create_alias_target(
@@ -147,6 +114,8 @@ pub async fn create_alias_target(
 }
 
 pub struct UpdateAliasTargetParams {
+    pub provider_id: Option<Uuid>,
+    pub model_id: Option<String>,
     pub enabled: Option<bool>,
 }
 
@@ -157,10 +126,15 @@ pub async fn update_alias_target(
 ) -> anyhow::Result<Option<AliasTargetRow>> {
     let row = sqlx::query(
         "UPDATE alias_targets
-         SET enabled = COALESCE($1, enabled)
-         WHERE id = $2
+         SET
+            provider_id = COALESCE($1, provider_id),
+            model_id = COALESCE($2, model_id),
+            enabled = COALESCE($3, enabled)
+         WHERE id = $4
          RETURNING id, alias_id, provider_id, model_id, enabled, created_at",
     )
+    .bind(params.provider_id)
+    .bind(params.model_id)
     .bind(params.enabled)
     .bind(id)
     .fetch_optional(pool)
@@ -199,6 +173,7 @@ pub async fn fetch_alias_target_details(
     // We just pick one endpoint (e.g. max ID or whatever) since we assume any valid endpoint for the provider+api_type works.
     let rows = sqlx::query(
         "SELECT DISTINCT ON (p.usage_count, p.id)
+            at.id,
             a.id AS alias_id,
             a.name AS alias_name,
             at.id AS alias_target_id,
@@ -207,19 +182,17 @@ pub async fn fetch_alias_target_details(
             p.usage_count AS provider_usage_count,
             pe.id AS provider_endpoint_id,
             pe.url AS endpoint_url,
-            m.id AS model_id,
-            m.name AS model_name,
-            m.api_type
+            at.model_id,
+            at.enabled,
+            at.created_at
          FROM aliases a
          JOIN alias_targets at
            ON at.alias_id = a.id AND at.enabled = true
          JOIN providers p
            ON p.id = at.provider_id AND p.enabled = true
-         JOIN models m
-           ON m.id = at.model_id AND m.enabled = true
          JOIN provider_endpoints pe
-           ON pe.provider_id = p.id AND pe.api_type = m.api_type AND pe.enabled = true
-         WHERE a.name = $1 AND m.api_type = $2 AND a.enabled = true
+           ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true
+         WHERE a.name = $1 AND a.enabled = true
          ORDER BY p.usage_count ASC, p.id",
     )
     .bind(alias_name)
@@ -230,6 +203,7 @@ pub async fn fetch_alias_target_details(
     let mut details = Vec::with_capacity(rows.len());
     for row in rows {
         details.push(AliasTargetDetail {
+            id: row.try_get("id")?,
             alias_id: row.try_get("alias_id")?,
             alias_name: row.try_get("alias_name")?,
             alias_target_id: row.try_get("alias_target_id")?,
@@ -239,11 +213,12 @@ pub async fn fetch_alias_target_details(
             provider_endpoint_id: row.try_get("provider_endpoint_id").ok(),
             endpoint_url: row.try_get("endpoint_url").ok(),
             model_id: row.try_get("model_id")?,
-            model_name: row.try_get("model_name")?,
-            api_type: row.try_get("api_type")?,
+            enabled: row.try_get("enabled")?,
+            created_at: row.try_get("created_at")?,
         });
     }
 
     Ok(details)
 }
+
 

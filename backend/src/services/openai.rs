@@ -68,7 +68,7 @@ impl OpenAiService {
 
         payload_object.insert(
             "model".to_string(),
-            Value::String(target.model_name.clone()),
+            Value::String(target.model_id.clone()),
         );
         let stream = payload_object
             .get("stream")
@@ -100,7 +100,7 @@ impl OpenAiService {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
                     api_type: Some(logging::ApiType::OpenAiChatCompletions),
-                    model: Some(target.model_name.clone()),
+                    model: Some(target.model_id.clone()),
                     alias: Some(model),
                     provider: Some(target.provider_name.clone()),
                     endpoint: Some(url),
@@ -119,7 +119,7 @@ impl OpenAiService {
         let status = response.status();
         let content_type = response.headers().get(header::CONTENT_TYPE).cloned();
 
-        let model_name = target.model_name.clone();
+        let model_id = target.model_id.clone();
         let provider_name = target.provider_name.clone();
         let endpoint = url.clone();
 
@@ -160,7 +160,7 @@ impl OpenAiService {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
                     api_type: Some(logging::ApiType::OpenAiChatCompletions),
-                    model: Some(model_name),
+                    model: Some(model_id),
                     alias: Some(alias),
                     provider: Some(provider_name),
                     endpoint: Some(endpoint),
@@ -193,7 +193,7 @@ impl OpenAiService {
                 request_id,
                 gateway_key_id: Some(gateway_key_id.0),
                 api_type: Some(logging::ApiType::OpenAiChatCompletions),
-                model: Some(model_name),
+                model: Some(model_id),
                 alias: Some(model),
                 provider: Some(provider_name),
                 endpoint: Some(endpoint),

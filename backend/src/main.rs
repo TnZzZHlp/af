@@ -10,15 +10,13 @@ mod state;
 use std::net::SocketAddr;
 
 use sqlx::postgres::PgPoolOptions;
-use tracing_subscriber::EnvFilter;
+use tracing::Level;
 
 use crate::{config::load_config, services::openai::OpenAiService, state::AppState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     let config = load_config()?;
     let pool = PgPoolOptions::new()

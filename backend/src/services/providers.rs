@@ -1,6 +1,5 @@
 use crate::db::types::ApiType;
 use crate::db::{
-    models::{self, CreateModelParams, ModelRow, UpdateModelParams},
     provider_endpoints::{self, CreateEndpointParams, ProviderEndpointRow, UpdateEndpointParams},
     provider_keys::{self, CreateKeyParams, ProviderKeyRow, UpdateKeyParams},
     providers::{self, CreateProviderParams, ProviderRow, UpdateProviderParams},
@@ -151,51 +150,4 @@ pub async fn update_key(
 
 pub async fn delete_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
     provider_keys::delete_key(pool, id).await
-}
-
-// Models
-
-pub async fn list_models_by_provider(
-    pool: &PgPool,
-    provider_id: Uuid,
-) -> anyhow::Result<Vec<ModelRow>> {
-    models::list_models(pool, provider_id).await
-}
-
-pub async fn create_model(
-    pool: &PgPool,
-    provider_id: Uuid,
-    api_type: ApiType,
-    name: String,
-) -> anyhow::Result<ModelRow> {
-    models::create_model(
-        pool,
-        CreateModelParams {
-            provider_id,
-            api_type,
-            name,
-        },
-    )
-    .await
-}
-
-pub async fn update_model(
-    pool: &PgPool,
-    id: Uuid,
-    name: Option<String>,
-    enabled: Option<bool>,
-) -> anyhow::Result<Option<ModelRow>> {
-    models::update_model(
-        pool,
-        id,
-        UpdateModelParams {
-            name,
-            enabled,
-        },
-    )
-    .await
-}
-
-pub async fn delete_model(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
-    models::delete_model(pool, id).await
 }

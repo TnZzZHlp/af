@@ -92,6 +92,10 @@ export const useGatewayKeysStore = defineStore("gateway-keys", () => {
     }
   }
 
+  function clearError() {
+    error.value = null;
+  }
+
   return {
     keys,
     loading,
@@ -100,5 +104,6 @@ export const useGatewayKeysStore = defineStore("gateway-keys", () => {
     createKey,
     updateKey,
     deleteKey,
+    clearError,
   };
 });
