@@ -10,13 +10,14 @@ mod state;
 use std::net::SocketAddr;
 
 use sqlx::postgres::PgPoolOptions;
-use tracing::Level;
 
 use crate::{config::load_config, services::openai::OpenAiService, state::AppState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    tracing_subscriber::fmt()
+        .with_env_filter("backend=debug,info")
+        .init();
 
     let config = load_config()?;
     let pool = PgPoolOptions::new()
@@ -41,7 +42,11 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
 
     Ok(())
 }

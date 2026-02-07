@@ -17,6 +17,8 @@ pub struct RequestLogContext {
     pub user_agent: Option<String>,
     pub request_body: Option<Vec<u8>>,
     pub response_body: Option<Vec<u8>>,
+    pub request_content_type: Option<String>,
+    pub response_content_type: Option<String>,
 }
 
 pub struct RequestLogInsert {
@@ -33,6 +35,8 @@ pub struct RequestLogInsert {
     pub user_agent: Option<String>,
     pub request_body: Option<Vec<u8>>,
     pub response_body: Option<Vec<u8>>,
+    pub request_content_type: Option<String>,
+    pub response_content_type: Option<String>,
 }
 
 pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyhow::Result<()> {
@@ -41,7 +45,27 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
     };
 
     sqlx::query(
-        "INSERT INTO request_logs (\n            request_id,\n            gateway_key_id,\n            api_type,\n            model,\n            alias,\n            provider,\n            endpoint,\n            status_code,\n            latency_ms,\n            client_ip,\n            user_agent,\n            request_body,\n            response_body\n         ) VALUES (\n            $1, $2, $3, $4, $5, $6, $7,\n            $8, $9, $10, $11, $12, $13\n         )",
+        "INSERT INTO request_logs (
+            request_id,
+            gateway_key_id,
+            api_type,
+            model,
+            alias,
+            provider,
+            endpoint,
+            status_code,
+            latency_ms,
+            client_ip,
+            user_agent,
+            request_body,
+            response_body,
+            request_content_type,
+            response_content_type
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7,
+                $8, $9, $10::inet, $11, $12, $13,
+                $14, $15
+            )",
     )
     .bind(context.request_id)
     .bind(context.gateway_key_id)
@@ -56,6 +80,8 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
     .bind(context.user_agent.as_deref())
     .bind(context.request_body.as_deref())
     .bind(context.response_body.as_deref())
+    .bind(context.request_content_type.as_deref())
+    .bind(context.response_content_type.as_deref())
     .execute(pool)
     .await?;
 

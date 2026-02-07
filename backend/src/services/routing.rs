@@ -15,6 +15,7 @@ pub struct AliasTargetDetail {
     pub provider_endpoint_id: Option<Uuid>,
     pub endpoint_url: Option<String>,
     pub model_id: String,
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -48,6 +49,7 @@ pub async fn fetch_alias_target_details(
             provider_endpoint_id: row.provider_endpoint_id,
             endpoint_url: row.endpoint_url,
             model_id: row.model_id,
+            enabled: row.enabled,
         });
     }
 

@@ -18,6 +18,8 @@ pub struct RequestLogContext {
     pub user_agent: Option<String>,
     pub request_body: Option<Vec<u8>>,
     pub response_body: Option<Vec<u8>>,
+    pub request_content_type: Option<String>,
+    pub response_content_type: Option<String>,
 }
 
 pub struct RequestLogInsert {
@@ -34,6 +36,8 @@ pub struct RequestLogInsert {
     pub user_agent: Option<String>,
     pub request_body: Option<Vec<u8>>,
     pub response_body: Option<Vec<u8>>,
+    pub request_content_type: Option<String>,
+    pub response_content_type: Option<String>,
 }
 
 pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyhow::Result<()> {
@@ -55,6 +59,8 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
         user_agent: context.user_agent.clone(),
         request_body: context.request_body.clone(),
         response_body: context.response_body.clone(),
+        request_content_type: context.request_content_type.clone(),
+        response_content_type: context.response_content_type.clone(),
     };
 
     request_logs::record_request(pool, &db_context).await

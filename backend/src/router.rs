@@ -2,7 +2,8 @@ use axum::{
     Router, middleware as axum_middleware,
     routing::{delete, get, post, put},
 };
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 
 use crate::{handlers, middleware, state::AppState};
 
@@ -78,7 +79,7 @@ pub fn app(state: AppState) -> Router {
             delete(handlers::aliases::delete_alias_target),
         );
 
-    let protected_routes = Router::new()
+    let ai_routes = Router::new()
         .route(
             "/v1/chat/completions",
             post(handlers::openai::chat_completions),
@@ -95,24 +96,27 @@ pub fn app(state: AppState) -> Router {
     Router::new()
         .nest(
             "/api",
-            Router::new()
-                .merge(auth_routes)
-                .merge(
-                    Router::new()
-                        .merge(gateway_key_routes)
-                        .merge(provider_routes)
-                        .merge(alias_routes)
-                        .layer(axum_middleware::from_fn_with_state(
-                            state.clone(),
-                            middleware::admin_auth::admin_auth_middleware,
-                        )),
-                )
-                .merge(protected_routes),
+            Router::new().merge(auth_routes).merge(
+                Router::new()
+                    .merge(gateway_key_routes)
+                    .merge(provider_routes)
+                    .merge(alias_routes)
+                    .layer(axum_middleware::from_fn_with_state(
+                        state.clone(),
+                        middleware::admin_auth::admin_auth_middleware,
+                    )),
+            ),
         )
+        .merge(ai_routes)
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::request_log::request_log_middleware,
         ))
-        .layer(TraceLayer::new_for_http())
+        .layer(
+            TraceLayer::new_for_http()
+                .on_request(DefaultOnRequest::new().level(Level::INFO))
+                .on_response(DefaultOnResponse::new().level(Level::INFO))
+                .on_failure(DefaultOnFailure::new().level(Level::INFO)),
+        )
         .with_state(state)
 }
