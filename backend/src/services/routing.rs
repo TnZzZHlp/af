@@ -25,9 +25,6 @@ pub struct ProviderKey {
     pub name: Option<String>,
     pub key: String,
     pub usage_count: i64,
-    pub fail_count: i32,
-    pub circuit_open_until: Option<sqlx::types::time::OffsetDateTime>,
-    pub last_fail_at: Option<sqlx::types::time::OffsetDateTime>,
 }
 
 pub async fn fetch_alias_target_details(
@@ -68,9 +65,6 @@ pub async fn fetch_provider_keys(
             name: row.name,
             key: row.key,
             usage_count: row.usage_count,
-            fail_count: row.fail_count,
-            circuit_open_until: row.circuit_open_until,
-            last_fail_at: row.last_fail_at,
         });
     }
 

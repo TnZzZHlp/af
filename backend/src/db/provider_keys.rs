@@ -11,11 +11,6 @@ pub struct ProviderKey {
     pub key: String,
     pub usage_count: i64,
     pub enabled: bool,
-    pub fail_count: i32,
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub circuit_open_until: Option<OffsetDateTime>,
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub last_fail_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }
@@ -32,14 +27,10 @@ pub async fn fetch_provider_keys(
             key,
             usage_count,
             enabled,
-            fail_count,
-            circuit_open_until,
-            last_fail_at,
             created_at
          FROM provider_keys
          WHERE provider_id = $1
            AND enabled = true
-           AND (circuit_open_until IS NULL OR circuit_open_until <= now())
          ORDER BY usage_count ASC",
         provider_id
     )
@@ -55,9 +46,6 @@ pub async fn fetch_provider_keys(
             key: row.key,
             usage_count: row.usage_count,
             enabled: row.enabled,
-            fail_count: row.fail_count,
-            circuit_open_until: row.circuit_open_until,
-            last_fail_at: row.last_fail_at,
             created_at: row.created_at,
         });
     }
@@ -77,9 +65,6 @@ pub async fn list_keys_by_provider(
             key,
             usage_count,
             enabled,
-            fail_count,
-            circuit_open_until,
-            last_fail_at,
             created_at
          FROM provider_keys
          WHERE provider_id = $1
@@ -98,9 +83,6 @@ pub async fn list_keys_by_provider(
             key: row.key,
             usage_count: row.usage_count,
             enabled: row.enabled,
-            fail_count: row.fail_count,
-            circuit_open_until: row.circuit_open_until,
-            last_fail_at: row.last_fail_at,
             created_at: row.created_at,
         });
     }
@@ -118,7 +100,7 @@ pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Resul
     let row = sqlx::query!(
         "INSERT INTO provider_keys (provider_id, name, key)
          VALUES ($1, $2, $3)
-         RETURNING id, provider_id, name, key, usage_count, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
+         RETURNING id, provider_id, name, key, usage_count, enabled, created_at",
         params.provider_id,
         params.name,
         params.key
@@ -133,9 +115,6 @@ pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Resul
         key: row.key,
         usage_count: row.usage_count,
         enabled: row.enabled,
-        fail_count: row.fail_count,
-        circuit_open_until: row.circuit_open_until,
-        last_fail_at: row.last_fail_at,
         created_at: row.created_at,
     })
 }
@@ -155,7 +134,7 @@ pub async fn update_key(
          SET name = COALESCE($1, name),
              enabled = COALESCE($2, enabled)
          WHERE id = $3
-         RETURNING id, provider_id, name, key, usage_count, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
+         RETURNING id, provider_id, name, key, usage_count, enabled, created_at",
         params.name,
         params.enabled,
         id
@@ -174,9 +153,6 @@ pub async fn update_key(
         key: row.key,
         usage_count: row.usage_count,
         enabled: row.enabled,
-        fail_count: row.fail_count,
-        circuit_open_until: row.circuit_open_until,
-        last_fail_at: row.last_fail_at,
         created_at: row.created_at,
     }))
 }

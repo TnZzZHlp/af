@@ -86,7 +86,11 @@ impl OpenAiService {
             "resolved alias target"
         );
 
-        let _ = providers::increment_usage_count(&self.pool, target.provider_id).await;
+        let pool = self.pool.clone();
+        let provider_id = target.provider_id;
+        tokio::spawn(async move {
+            let _ = providers::increment_usage_count(&pool, provider_id).await;
+        });
 
         tracing::debug!("fetching provider keys");
         let provider_keys: Vec<routing::ProviderKey> =
@@ -98,7 +102,11 @@ impl OpenAiService {
 
         tracing::debug!(provider_key_id = %provider_key.id, "selected provider key");
 
-        let _ = provider_keys::increment_usage_count(&self.pool, provider_key.id).await;
+        let pool = self.pool.clone();
+        let key_id = provider_key.id;
+        tokio::spawn(async move {
+            let _ = provider_keys::increment_usage_count(&pool, key_id).await;
+        });
 
         payload_object.insert("model".to_string(), Value::String(target.model_id.clone()));
         let stream = payload_object
@@ -180,9 +188,12 @@ impl OpenAiService {
                     request_content_type: Some("application/json".to_string()),
                     response_content_type: Some("text/plain".to_string()),
                 };
-                if let Err(err) = logging::record_request(&self.pool, &context).await {
-                    tracing::error!(error = %err, "failed to record request log");
-                }
+                let pool = self.pool.clone();
+                tokio::spawn(async move {
+                    if let Err(err) = logging::record_request(&pool, &context).await {
+                        tracing::error!(error = %err, "failed to record request log");
+                    }
+                });
                 return Err(AppError::Internal(err.into()));
             }
         };
@@ -288,9 +299,12 @@ impl OpenAiService {
                 request_content_type: Some("application/json".to_string()),
                 response_content_type,
             };
-            if let Err(err) = logging::record_request(&self.pool, &context).await {
-                tracing::error!(error = %err, "failed to record request log");
-            }
+            let pool = self.pool.clone();
+            tokio::spawn(async move {
+                if let Err(err) = logging::record_request(&pool, &context).await {
+                    tracing::error!(error = %err, "failed to record request log");
+                }
+            });
 
             response
         };

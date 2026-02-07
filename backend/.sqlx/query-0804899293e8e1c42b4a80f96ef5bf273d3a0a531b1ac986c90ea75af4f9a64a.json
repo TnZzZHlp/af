@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO provider_keys (provider_id, name, key)\n         VALUES ($1, $2, $3)\n         RETURNING id, provider_id, name, key, usage_count, enabled, fail_count, circuit_open_until, last_fail_at, created_at",
+  "query": "SELECT\n            id,\n            provider_id,\n            name,\n            key,\n            usage_count,\n            enabled,\n            created_at\n         FROM provider_keys\n         WHERE provider_id = $1\n         ORDER BY created_at DESC",
   "describe": {
     "columns": [
       {
@@ -35,30 +35,13 @@
       },
       {
         "ordinal": 6,
-        "name": "fail_count",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 7,
-        "name": "circuit_open_until",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 8,
-        "name": "last_fail_at",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Text",
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -68,11 +51,8 @@
       false,
       false,
       false,
-      false,
-      true,
-      true,
       false
     ]
   },
-  "hash": "e100e9a8e06de2ec3481d7c9dae53be7692f5213d1d8e4fba37793276592475d"
+  "hash": "0804899293e8e1c42b4a80f96ef5bf273d3a0a531b1ac986c90ea75af4f9a64a"
 }

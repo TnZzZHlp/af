@@ -25,9 +25,6 @@ export interface ProviderKey {
   name: string | null;
   key: string;
   enabled: boolean;
-  fail_count: number;
-  circuit_open_until: string | null;
-  last_fail_at: string | null;
   created_at: string;
 }
 
