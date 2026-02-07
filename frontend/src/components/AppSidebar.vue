@@ -31,32 +31,32 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/manage/dashboard",
       icon: LayoutDashboard,
     },
     {
       title: "Gateway Keys",
-      url: "/dashboard/gateway-keys",
+      url: "/manage/gateway-keys",
       icon: Key,
     },
     {
       title: "Providers",
-      url: "/dashboard/providers",
+      url: "/manage/providers",
       icon: Blocks,
     },
     {
       title: "Aliases",
-      url: "/dashboard/aliases",
+      url: "/manage/aliases",
       icon: Route,
     },
     {
       title: "Request Logs",
-      url: "/dashboard/request-logs",
+      url: "/manage/request-logs",
       icon: Activity,
     },
     {
       title: "Users",
-      url: "/dashboard/users",
+      url: "/manage/users",
       icon: Users,
     },
   ],
@@ -70,7 +70,8 @@ const data = {
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child>
             <router-link to="/dashboard">
-              <div class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <div
+                class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Command class="size-4" />
               </div>
               <div class="grid flex-1 text-left text-sm leading-tight">
