@@ -27,7 +27,7 @@ jobs:
           path: |
             frontend/node_modules
             ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm
 
       - name: Install frontend dependencies
         run: cd frontend && pnpm install
