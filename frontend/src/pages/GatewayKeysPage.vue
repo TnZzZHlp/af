@@ -104,9 +104,9 @@ function openEditSheet(key: GatewayKey) {
 
 async function handleSubmit() {
   const payload = {
-    name: form.value.name || undefined,
-    rate_limit_rps: form.value.rate_limit_rps ? Number(form.value.rate_limit_rps) : undefined,
-    rate_limit_rpm: form.value.rate_limit_rpm ? Number(form.value.rate_limit_rpm) : undefined,
+    name: form.value.name || null,
+    rate_limit_rps: form.value.rate_limit_rps ? Number(form.value.rate_limit_rps) : null,
+    rate_limit_rpm: form.value.rate_limit_rpm ? Number(form.value.rate_limit_rpm) : null,
   };
 
   if (isEditing.value && editingId.value) {
@@ -134,7 +134,7 @@ async function confirmDelete() {
 }
 
 async function toggleEnabled(key: GatewayKey) {
-  await store.updateKey(key.id, { enabled: !key.enabled });
+  await store.updateKey(key.id, { name: key.name, enabled: !key.enabled, rate_limit_rps: key.rate_limit_rps, rate_limit_rpm: key.rate_limit_rpm });
 }
 
 function toggleKeyVisibility(id: string) {

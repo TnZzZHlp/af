@@ -16,16 +16,16 @@ export interface ListGatewayKeysParams {
 }
 
 export interface CreateGatewayKeyRequest {
-  name?: string;
-  rate_limit_rps?: number;
-  rate_limit_rpm?: number;
+  name?: string | null;
+  rate_limit_rps?: number | null;
+  rate_limit_rpm?: number | null;
 }
 
 export interface UpdateGatewayKeyRequest {
-  name?: string;
+  name: string | null;
   enabled?: boolean;
-  rate_limit_rps?: number;
-  rate_limit_rpm?: number;
+  rate_limit_rps: number | null;
+  rate_limit_rpm: number | null;
 }
 
 export async function listGatewayKeys(params: ListGatewayKeysParams = {}): Promise<GatewayKey[]> {
@@ -48,7 +48,10 @@ export async function getGatewayKey(id: string): Promise<GatewayKey> {
   return requestJson<GatewayKey>(`/gateway-keys/${id}`);
 }
 
-export async function updateGatewayKey(id: string, payload: UpdateGatewayKeyRequest): Promise<GatewayKey> {
+export async function updateGatewayKey(
+  id: string,
+  payload: UpdateGatewayKeyRequest,
+): Promise<GatewayKey> {
   return requestJson<GatewayKey>(`/gateway-keys/${id}`, {
     method: "PUT",
     body: payload,
