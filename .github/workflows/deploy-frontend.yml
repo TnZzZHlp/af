@@ -1,0 +1,65 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+  workflow_dispatch:
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
+
+      - name: Build frontend
+        run: cd frontend && pnpm build
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SERVER_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          chmod 700 ~/.ssh
+          ssh-keyscan -p 9999 $SERVER_IP >> ~/.ssh/known_hosts
+          echo "SSH directory contents:"
+          ls -la ~/.ssh
+          echo "Private key fingerprint:"
+          ssh-keygen -lf ~/.ssh/id_ed25519
+        shell: bash
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+
+      - name: Deploy frontend to server
+        run: |
+          # Test SSH connection with verbose output
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o LogLevel=VERBOSE -p 9999 root@$SERVER_IP "echo 'SSH connection successful'"
+
+          # Clear the frontend deployment directory (do not touch backend service)
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top/* && mkdir -p /www/ai.tnzzz.top"
+
+          # Upload built frontend files
+          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r frontend/build/client/* root@$SERVER_IP:/www/ai.tnzzz.top/
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}

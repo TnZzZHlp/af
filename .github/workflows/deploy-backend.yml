@@ -1,0 +1,81 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check backend toolchain
+        run: cd backend && rustc --version && cargo --version
+
+      - name: Build backend (release)
+        run: cd backend && cargo build --release
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SERVER_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          chmod 700 ~/.ssh
+          ssh-keyscan -p 9999 $SERVER_IP >> ~/.ssh/known_hosts
+          echo "SSH directory contents:"
+          ls -la ~/.ssh
+          echo "Private key fingerprint:"
+          ssh-keygen -lf ~/.ssh/id_ed25519
+        shell: bash
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+
+      - name: Deploy backend to server
+        run: |
+          # Test SSH connection with verbose output
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o LogLevel=VERBOSE -p 9999 root@$SERVER_IP "echo 'SSH connection successful'"
+
+          # Ensure destination directory exists
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "mkdir -p /root/github/af"
+
+          # Stop the backend service before replacing binary
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "systemctl stop af || true"
+
+          # Upload backend binary
+          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 backend/target/release/backend root@$SERVER_IP:/root/github/af/
+
+          # Make backend binary executable
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "chmod +x /root/github/af/backend"
+
+          # Start the backend service
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "systemctl start af"
+        env:
+          SERVER_IP: ${{ secrets.SERVER_IP }}
