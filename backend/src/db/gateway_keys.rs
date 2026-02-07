@@ -172,8 +172,8 @@ pub async fn update_gateway_key(
         "UPDATE gateway_keys
          SET name = COALESCE($1, name),
              enabled = COALESCE($2, enabled),
-             rate_limit_rps = COALESCE($3, rate_limit_rps),
-             rate_limit_rpm = COALESCE($4, rate_limit_rpm)
+             rate_limit_rps = $3,
+             rate_limit_rpm = $4
          WHERE id = $5
          RETURNING id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at",
         params.name,
