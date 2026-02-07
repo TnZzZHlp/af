@@ -57,7 +57,7 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o LogLevel=VERBOSE -p 9999 root@$SERVER_IP "echo 'SSH connection successful'"
 
           # Clear the frontend deployment directory (do not touch backend service)
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top/* && mkdir -p /www/ai.tnzzz.top"
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top/* || true && mkdir -p /www/ai.tnzzz.top"
 
           # Upload built frontend files
           scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r frontend/dist/* root@$SERVER_IP:/www/ai.tnzzz.top/
