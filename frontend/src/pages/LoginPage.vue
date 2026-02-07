@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue"
 import { useAuthStore } from "@/stores/auth"
-import { useRouter } from "vue-router"
+import { useRouter, useRoute } from "vue-router"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,6 +18,7 @@ import { Activity, AlertCircle, CheckCircle2, Lock, User, Loader2 } from "lucide
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 const form = reactive({
   username: "",
@@ -44,7 +45,8 @@ const handleSubmit = async () => {
     successMessage.value = `Welcome back, ${greetingName}.`
     form.password = ""
     setTimeout(() => {
-      router.push("/dashboard")
+      const redirectPath = route.query.redirect as string | undefined
+      router.push(redirectPath || "/manage/dashboard")
     }, 1000)
   }
 }

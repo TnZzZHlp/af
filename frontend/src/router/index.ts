@@ -1,5 +1,6 @@
-import { createRouter, createWebHistory } from "vue-router"
-import LoginPage from "@/pages/LoginPage.vue"
+import { createRouter, createWebHistory } from "vue-router";
+import LoginPage from "@/pages/LoginPage.vue";
+import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -8,13 +9,15 @@ const router = createRouter({
       path: "/",
       name: "login",
       component: LoginPage,
+      meta: { guestOnly: true },
     },
     {
-      path: "/dashboard",
+      path: "/manage",
       component: () => import("@/layouts/DashboardLayout.vue"),
+      meta: { requiresAuth: true },
       children: [
         {
-          path: "",
+          path: "dashboard",
           name: "dashboard",
           component: () => import("@/pages/DashboardPage.vue"),
         },
@@ -46,6 +49,19 @@ const router = createRouter({
       ],
     },
   ],
-})
+});
 
-export default router
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+  const isAuthenticated = !!authStore.user;
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next({ name: "login", query: { redirect: to.fullPath } });
+  } else if (to.meta.guestOnly && isAuthenticated) {
+    next({ name: "dashboard" });
+  } else {
+    next();
+  }
+});
+
+export default router;

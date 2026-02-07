@@ -28,11 +28,6 @@ const props = withDefaults(defineProps<SidebarProps>(), {
 })
 
 const data = {
-  user: {
-    name: "Admin",
-    email: "admin@example.com",
-    avatar: "",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -91,7 +86,7 @@ const data = {
       <NavMain :items="data.navMain" />
     </SidebarContent>
     <SidebarFooter>
-      <NavUser :user="data.user" />
+      <NavUser />
     </SidebarFooter>
   </Sidebar>
 </template>
