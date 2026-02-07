@@ -159,8 +159,8 @@ pub async fn create_gateway_key(
 pub struct UpdateGatewayKeyParams {
     pub name: Option<String>,
     pub enabled: Option<bool>,
-    pub rate_limit_rps: Option<Option<i32>>,
-    pub rate_limit_rpm: Option<Option<i32>>,
+    pub rate_limit_rps: Option<i32>,
+    pub rate_limit_rpm: Option<i32>,
 }
 
 pub async fn update_gateway_key(
@@ -168,25 +168,18 @@ pub async fn update_gateway_key(
     id: Uuid,
     params: UpdateGatewayKeyParams,
 ) -> anyhow::Result<Option<GatewayKey>> {
-    let rps_provided = params.rate_limit_rps.is_some();
-    let rps_value = params.rate_limit_rps.flatten();
-    let rpm_provided = params.rate_limit_rpm.is_some();
-    let rpm_value = params.rate_limit_rpm.flatten();
-
     let row = sqlx::query!(
         "UPDATE gateway_keys
          SET name = COALESCE($1, name),
              enabled = COALESCE($2, enabled),
-             rate_limit_rps = CASE WHEN $3 THEN $4 ELSE rate_limit_rps END,
-             rate_limit_rpm = CASE WHEN $5 THEN $6 ELSE rate_limit_rpm END
-         WHERE id = $7
+             rate_limit_rps = COALESCE($3, rate_limit_rps),
+             rate_limit_rpm = COALESCE($4, rate_limit_rpm)
+         WHERE id = $5
          RETURNING id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at",
         params.name,
         params.enabled,
-        rps_provided,
-        rps_value,
-        rpm_provided,
-        rpm_value,
+        params.rate_limit_rps,
+        params.rate_limit_rpm,
         id
     )
     .fetch_optional(pool)

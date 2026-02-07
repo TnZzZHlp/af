@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE gateway_keys\n         SET name = COALESCE($1, name),\n             enabled = COALESCE($2, enabled),\n             rate_limit_rps = CASE WHEN $3 THEN $4 ELSE rate_limit_rps END,\n             rate_limit_rpm = CASE WHEN $5 THEN $6 ELSE rate_limit_rpm END\n         WHERE id = $7\n         RETURNING id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at",
+  "query": "UPDATE gateway_keys\n         SET name = COALESCE($1, name),\n             enabled = COALESCE($2, enabled),\n             rate_limit_rps = COALESCE($3, rate_limit_rps),\n             rate_limit_rpm = COALESCE($4, rate_limit_rpm)\n         WHERE id = $5\n         RETURNING id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at",
   "describe": {
     "columns": [
       {
@@ -43,9 +43,7 @@
       "Left": [
         "Text",
         "Bool",
-        "Bool",
         "Int4",
-        "Bool",
         "Int4",
         "Uuid"
       ]
@@ -60,5 +58,5 @@
       false
     ]
   },
-  "hash": "c1fa110f5455d47ed36d7c164e7a0524077c918138e20187f3a46613f8870f52"
+  "hash": "58e30c343d8d356a1fa9fa5ce8f575ca604581f8aa2a35c36cabfe878616fc45"
 }
