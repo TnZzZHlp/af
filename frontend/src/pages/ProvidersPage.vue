@@ -462,6 +462,7 @@ async function copyToClipboard(text: string, id: string) {
                                 <TableRow>
                                   <TableHead>Name</TableHead>
                                   <TableHead>Key</TableHead>
+                                  <TableHead>Usage</TableHead>
                                   <TableHead>Status</TableHead>
                                   <TableHead class="text-right">Actions</TableHead>
                                 </TableRow>
@@ -479,6 +480,7 @@ async function copyToClipboard(text: string, id: string) {
                                       </Button>
                                     </div>
                                   </TableCell>
+                                  <TableCell>{{ key.usage_count }}</TableCell>
                                   <TableCell>
                                     <div class="h-2 w-2 rounded-full cursor-pointer"
                                       :class="key.enabled ? 'bg-green-500' : 'bg-gray-400'"
@@ -499,7 +501,7 @@ async function copyToClipboard(text: string, id: string) {
                                   </TableCell>
                                 </TableRow>
                                 <TableRow v-if="!store.keys[provider.id]?.length">
-                                  <TableCell colspan="4" class="text-center py-6 text-muted-foreground italic">
+                                  <TableCell colspan="5" class="text-center py-6 text-muted-foreground italic">
                                     No keys configured
                                   </TableCell>
                                 </TableRow>

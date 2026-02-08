@@ -25,6 +25,7 @@ export interface ProviderKey {
   provider_id: string;
   name: string | null;
   key: string;
+  usage_count: number;
   enabled: boolean;
   created_at: string;
 }
