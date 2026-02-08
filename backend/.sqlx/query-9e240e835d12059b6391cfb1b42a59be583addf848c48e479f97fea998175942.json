@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, description, enabled, usage_count, created_at\n         FROM providers\n         ORDER BY created_at DESC\n         LIMIT $1 OFFSET $2",
+  "query": "SELECT id, name, description, brief, enabled, usage_count, created_at\n         FROM providers\n         ORDER BY created_at DESC\n         LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -20,16 +20,21 @@
       },
       {
         "ordinal": 3,
+        "name": "brief",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
         "name": "enabled",
         "type_info": "Bool"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "usage_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -44,10 +49,11 @@
       false,
       false,
       true,
+      true,
       false,
       false,
       false
     ]
   },
-  "hash": "b942a129a1cdd5a785efcdf42f0f8be790261acf20b7f4b0120ded1520939355"
+  "hash": "9e240e835d12059b6391cfb1b42a59be583addf848c48e479f97fea998175942"
 }
