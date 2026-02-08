@@ -288,6 +288,15 @@ async function copyToClipboard(text: string, id: string) {
   copiedId.value = id;
   setTimeout(() => { copiedId.value = null; }, 2000);
 }
+
+function prettyApiType(apiType: string) {
+  const mapping: Record<string, string> = {
+    openai_chat_completions: "OpenAI Chat Completions",
+    openai_responses: "OpenAI Responses",
+    anthropic_messages: "Anthropic Messages",
+  };
+  return mapping[apiType] || apiType;
+}
 </script>
 
 <template>
@@ -414,7 +423,7 @@ async function copyToClipboard(text: string, id: string) {
                               </TableHeader>
                               <TableBody>
                                 <TableRow v-for="ep in store.endpoints[provider.id]" :key="ep.id">
-                                  <TableCell class="font-medium">{{ ep.api_type.split('_').pop() }}</TableCell>
+                                  <TableCell class="font-medium">{{ prettyApiType(ep.api_type) }}</TableCell>
                                   <TableCell class="max-w-30 truncate" :title="ep.url">{{ ep.url }}</TableCell>
                                   <TableCell>
                                     <div class="h-2 w-2 rounded-full cursor-pointer"
