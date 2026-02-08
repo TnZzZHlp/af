@@ -103,19 +103,15 @@ pub fn app(state: AppState) -> Router {
             put(handlers::users::update_password),
         );
 
+    let stats_routes = Router::new().route("/stats", get(handlers::stats::get_dashboard_stats));
+
     let ai_routes = Router::new()
         .route(
             "/v1/chat/completions",
             post(handlers::openai::chat_completions),
         )
-        .route(
-            "/v1/responses",
-            post(handlers::openai::responses),
-        )
-        .route(
-            "/v1/messages",
-            post(handlers::openai::anthropic_messages),
-        )
+        .route("/v1/responses", post(handlers::openai::responses))
+        .route("/v1/messages", post(handlers::openai::anthropic_messages))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::rate_limit::rate_limit_middleware,
@@ -135,6 +131,7 @@ pub fn app(state: AppState) -> Router {
                     .merge(alias_routes)
                     .merge(request_log_routes)
                     .merge(user_routes)
+                    .merge(stats_routes)
                     .layer(axum_middleware::from_fn_with_state(
                         state.clone(),
                         middleware::admin_auth::admin_auth_middleware,
@@ -150,7 +147,7 @@ pub fn app(state: AppState) -> Router {
             TraceLayer::new_for_http()
                 .make_span_with(
                     DefaultMakeSpan::new()
-                        .include_headers(true)
+                        .include_headers(false)
                         .level(Level::INFO),
                 )
                 .on_request(DefaultOnRequest::new().level(Level::DEBUG))

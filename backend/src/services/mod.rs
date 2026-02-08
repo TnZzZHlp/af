@@ -6,4 +6,5 @@ pub mod openai;
 pub mod providers;
 pub mod rate_limit;
 pub mod routing;
+pub mod stats;
 pub mod users;
