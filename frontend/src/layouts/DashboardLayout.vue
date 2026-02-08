@@ -17,15 +17,15 @@ const pageTitle = computed(() => {
 </script>
 
 <template>
-  <SidebarProvider>
+  <SidebarProvider class="h-screen overflow-hidden">
     <AppSidebar />
-    <SidebarInset>
+    <SidebarInset class="flex flex-col overflow-hidden">
       <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="mr-2 h-4" />
         <span class="font-semibold">{{ pageTitle }}</span>
       </header>
-      <div class="p-4">
+      <div class="flex flex-1 flex-col overflow-hidden p-4 min-h-0">
         <RouterView />
       </div>
     </SidebarInset>

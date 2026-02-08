@@ -210,7 +210,7 @@ function formatDate(dateStr: string) {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 h-full flex flex-col min-h-0">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Aliases</h1>
@@ -230,9 +230,9 @@ function formatDate(dateStr: string) {
       <Button variant="ghost" size="sm" @click="store.clearError">Dismiss</Button>
     </div>
 
-    <div class="rounded-md border">
-      <Table>
-        <TableHeader>
+    <div class="rounded-md border flex-1 min-h-0 flex flex-col">
+      <Table class="flex-1 min-h-0">
+        <TableHeader class="sticky top-0 bg-background z-10 shadow-sm">
           <TableRow>
             <TableHead class="w-7.5"></TableHead>
             <TableHead>Name</TableHead>
@@ -298,7 +298,11 @@ function formatDate(dateStr: string) {
                       View Targets
                     </AccordionTrigger>
                     <AccordionContent class="px-8 pb-6">
-                      <div class="space-y-4">
+                      <div v-if="store.loading && !store.targets[alias.id]"
+                        class="flex items-center justify-center py-10">
+                        <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
+                      </div>
+                      <div v-else class="space-y-4">
                         <div class="flex items-center justify-between">
                           <h3 class="text-sm font-semibold flex items-center gap-2">
                             <ExternalLink class="h-4 w-4 text-primary" />
@@ -325,7 +329,8 @@ function formatDate(dateStr: string) {
                                 <TableCell>
                                   <div class="h-2 w-2 rounded-full cursor-pointer"
                                     :class="target.enabled ? 'bg-green-500' : 'bg-gray-400'"
-                                    @click="toggleTargetEnabled(alias.id, target)"></div>
+                                    @click="toggleTargetEnabled(alias.id, target)">
+                                  </div>
                                 </TableCell>
                                 <TableCell class="text-right">
                                   <div class="flex justify-end gap-1">
@@ -418,7 +423,8 @@ function formatDate(dateStr: string) {
             <div class="grid gap-2">
               <Label for="target-model-id">Model ID</Label>
               <Input id="target-model-id" v-model="targetForm.model_id" placeholder="e.g. gpt-4o" />
-              <p class="text-xs text-muted-foreground">Enter the model identifier used by the provider.</p>
+              <p class="text-xs text-muted-foreground">Enter the model identifier used by the provider.
+              </p>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">
@@ -440,7 +446,8 @@ function formatDate(dateStr: string) {
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the alias and remove all associated targets.
+            This action cannot be undone. This will permanently delete the alias and remove all associated
+            targets.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

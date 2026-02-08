@@ -122,7 +122,7 @@ function nextPage() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 h-full flex flex-col min-h-0">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Request Logs</h1>
@@ -149,9 +149,9 @@ function nextPage() {
       <span>{{ store.error }}</span>
     </div>
 
-    <div class="rounded-md border">
-      <Table>
-        <TableHeader>
+    <div class="rounded-md border flex-1 min-h-0 flex flex-col">
+      <Table class="flex-1 min-h-0">
+        <TableHeader class="sticky top-0 bg-background z-10 shadow-sm">
           <TableRow>
             <TableHead class="w-7.5"></TableHead>
             <TableHead>Time</TableHead>

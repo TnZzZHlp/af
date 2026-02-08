@@ -291,8 +291,8 @@ async function copyToClipboard(text: string, id: string) {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
+  <div class="space-y-6 h-full flex flex-col min-h-0">
+    <div class="flex items-center justify-between shrink-0">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">Providers</h1>
         <p class="text-muted-foreground">
@@ -306,14 +306,14 @@ async function copyToClipboard(text: string, id: string) {
     </div>
 
     <div v-if="store.error"
-      class="rounded-md bg-destructive/15 p-4 text-destructive text-sm flex justify-between items-center">
+      class="rounded-md bg-destructive/15 p-4 text-destructive text-sm flex justify-between items-center shrink-0">
       <span>{{ store.error }}</span>
       <Button variant="ghost" size="sm" @click="store.clearError">Dismiss</Button>
     </div>
 
-    <div class="rounded-md border">
-      <Table>
-        <TableHeader>
+    <div class="rounded-md border flex-1 flex flex-col min-h-0">
+      <Table class="flex-1 min-h-0">
+        <TableHeader class="sticky top-0 bg-background z-10 shadow-sm">
           <TableRow>
             <TableHead class="w-7.5"></TableHead>
             <TableHead>Name</TableHead>
@@ -386,7 +386,11 @@ async function copyToClipboard(text: string, id: string) {
                       View Endpoints & Keys
                     </AccordionTrigger>
                     <AccordionContent class="px-8 pb-6">
-                      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-4">
+                      <div v-if="store.loading && (!store.endpoints[provider.id] || !store.keys[provider.id])"
+                        class="flex items-center justify-center py-10">
+                        <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
+                      </div>
+                      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-4">
                         <!-- Endpoints Section -->
                         <div class="space-y-4">
                           <div class="flex items-center justify-between">
@@ -532,9 +536,10 @@ async function copyToClipboard(text: string, id: string) {
             </div>
             <div class="grid gap-2">
               <Label for="provider-brief">Brief (Code)</Label>
-              <Input id="provider-brief" v-model="providerForm.brief" placeholder="e.g. oai"
-                autocomplete="off" />
-              <p class="text-xs text-muted-foreground">Short code for invocation (e.g. if set to 'oai', use 'oai:gpt-4' to invoke).</p>
+              <Input id="provider-brief" v-model="providerForm.brief" placeholder="e.g. oai" autocomplete="off" />
+              <p class="text-xs text-muted-foreground">Short code for invocation (e.g. if set to 'oai', use 'oai:gpt-4'
+                to
+                invoke).</p>
             </div>
             <div class="grid gap-2">
               <Label for="provider-description">Description (Optional)</Label>
