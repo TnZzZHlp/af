@@ -30,7 +30,7 @@ pub async fn resolve_route(
         tracing::debug!(?whitelist, "checking model whitelist");
         if !whitelist.iter().any(|entry| entry == model) {
             tracing::debug!("model not in whitelist");
-            return Err(AppError::Forbidden.into());
+            return Err(AppError::Forbidden("model not in whitelist".to_string()).into());
         }
     } else {
         tracing::debug!("whitelist is empty, skipping check");

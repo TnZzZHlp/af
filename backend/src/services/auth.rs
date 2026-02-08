@@ -2,12 +2,68 @@ use axum::http::{HeaderMap, header};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::db::{
     gateway_key_models,
     gateway_keys::{self, GatewayKey},
 };
+
+#[derive(Debug, Clone)]
+struct IpRecord {
+    failures: Vec<Instant>,
+    banned: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct LoginProtection {
+    records: Arc<RwLock<HashMap<String, IpRecord>>>,
+}
+
+impl LoginProtection {
+    pub fn new() -> Self {
+        Self {
+            records: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+
+    pub async fn is_banned(&self, ip: &str) -> bool {
+        let guard = self.records.read().await;
+        if let Some(record) = guard.get(ip) {
+            record.banned
+        } else {
+            false
+        }
+    }
+
+    pub async fn record_failure(&self, ip: &str) {
+        let mut guard = self.records.write().await;
+        let record = guard.entry(ip.to_string()).or_insert(IpRecord {
+            failures: Vec::new(),
+            banned: false,
+        });
+
+        if record.banned {
+            return;
+        }
+
+        let now = Instant::now();
+        record.failures.push(now);
+
+        // Remove old failures (> 1 minute)
+        record.failures.retain(|&t| now.duration_since(t) <= Duration::from_secs(60));
+
+        if record.failures.len() > 5 {
+            record.banned = true;
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

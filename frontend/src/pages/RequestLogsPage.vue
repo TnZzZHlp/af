@@ -27,9 +27,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Eye, ChevronLeft, ChevronRight, RefreshCw, Copy, Check } from "lucide-vue-next";
 import type { RequestLogSummary } from "@/api/request-logs";
 import { useClipboard } from "@vueuse/core";
-import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
-import "prismjs/components/prism-json";
+import { decodeBody, getHighlightedHtml, extractAiContent } from "@/lib/utils";
 
 const store = useRequestLogsStore();
 const { copy, copied } = useClipboard({ legacy: true });
@@ -57,43 +56,6 @@ async function openDetailSheet(log: RequestLogSummary) {
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleString();
-}
-
-function decodeBody(body: number[] | null): string {
-  if (!body) return "Empty";
-  try {
-    const text = new TextDecoder().decode(new Uint8Array(body));
-    try {
-      // Try to format JSON
-      return JSON.stringify(JSON.parse(text), null, 2);
-    } catch {
-      return text;
-    }
-  } catch {
-    return `[Binary Data: ${body.length} bytes]`;
-  }
-}
-
-
-// Helper to safely render: if highlighted, it's HTML. If not, we should probably escape it?
-// Actually Prism.highlight returns HTML.
-// If we return plain text, we should escape it to be safe when using v-html.
-function getHighlightedHtml(body: number[] | null): string {
-  const text = decodeBody(body);
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-    try {
-      return Prism.highlight(text, Prism.languages.json as Prism.Grammar, "json");
-    } catch (e) {
-      console.warn("Prism highlight failed", e);
-    }
-  }
-  // Escape HTML characters for safety since we are using v-html
-  return text.replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
 
 function handleCopy(text: string, section: string) {
@@ -227,6 +189,7 @@ function nextPage() {
           <Tabs default-value="overview" class="w-full">
             <TabsList class="mx-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="request">Request Body</TabsTrigger>
               <TabsTrigger value="response">Response Body</TabsTrigger>
             </TabsList>
@@ -287,6 +250,23 @@ function nextPage() {
               </div>
             </TabsContent>
 
+            <TabsContent value="content" class="p-0">
+              <div class="flex items-center justify-between px-6 py-4 border-b">
+                <h3 class="font-semibold">Generated Content</h3>
+                <Button variant="ghost" size="sm" class="h-8 w-8 p-0"
+                  @click="handleCopy(extractAiContent(store.currentLog.response_body, store.currentLog.api_type) || '', 'content')">
+                  <Check v-if="copied && copiedSection === 'content'" class="h-4 w-4 text-green-500" />
+                  <Copy v-else class="h-4 w-4" />
+                </Button>
+              </div>
+              <div class="overflow-x-auto max-h-150 p-6">
+                <div class="text-sm whitespace-pre-wrap leading-relaxed">
+                  {{ extractAiContent(store.currentLog.response_body, store.currentLog.api_type) ||
+                    'No content extracted.' }}
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="request" class="p-0">
               <div class="flex items-center justify-between px-6 py-4 border-b">
                 <h3 class="font-semibold">Request Body</h3>
@@ -297,7 +277,7 @@ function nextPage() {
                 </Button>
               </div>
               <div class="overflow-x-auto max-h-150">
-                <pre class="text-sm font-mono whitespace-pre-wrap break-all p-4 language-json"
+                <pre class="text-sm font-mono !whitespace-pre-wrap !break-all p-4 language-json"
                   v-html="getHighlightedHtml(store.currentLog.request_body)"></pre>
               </div>
             </TabsContent>
@@ -312,7 +292,7 @@ function nextPage() {
                 </Button>
               </div>
               <div class="overflow-x-auto max-h-150">
-                <pre class="text-sm font-mono whitespace-pre-wrap break-all p-4 language-json"
+                <pre class="text-sm font-mono !whitespace-pre-wrap !break-all p-4 language-json"
                   v-html="getHighlightedHtml(store.currentLog.response_body)"></pre>
               </div>
             </TabsContent>
