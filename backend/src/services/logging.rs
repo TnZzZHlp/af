@@ -1,14 +1,17 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::request_logs::{self, RequestLog, RequestLogContext, RequestLogSummary};
+use crate::db::request_logs::{self, RequestLog, RequestLogContext, RequestLogFilter, RequestLogSummary};
 
 pub async fn fetch_request_logs(
     pool: &PgPool,
-    limit: i64,
-    offset: i64,
+    filter: &RequestLogFilter,
 ) -> anyhow::Result<Vec<RequestLogSummary>> {
-    request_logs::fetch_request_logs(pool, limit, offset).await
+    request_logs::fetch_request_logs(pool, filter).await
+}
+
+pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> anyhow::Result<i64> {
+    request_logs::count_request_logs(pool, filter).await
 }
 
 pub async fn fetch_request_log_detail(

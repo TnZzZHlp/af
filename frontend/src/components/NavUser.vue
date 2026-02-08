@@ -2,9 +2,12 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { isDark, toggleDark } from '@/lib/useTheme'
 import {
   ChevronsUpDown,
   LogOut,
+  Moon,
+  Sun,
 } from "lucide-vue-next"
 
 import {
@@ -16,6 +19,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -75,7 +79,13 @@ function handleLogout() {
               </div>
             </div>
           </DropdownMenuLabel>
-
+          <DropdownMenuSeparator />
+          <DropdownMenuItem @click="toggleDark()">
+            <Moon v-if="!isDark" />
+            <Sun v-else />
+            Toggle theme
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem @click="handleLogout">
             <LogOut />
             Log out

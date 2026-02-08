@@ -2,11 +2,11 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    db::request_logs::{RequestLog, RequestLogSummary},
+    db::request_logs::{RequestLog, RequestLogFilter, RequestLogSummary},
     error::{AppError, AppResult},
     services::logging::{self},
     state::AppState,
@@ -16,18 +16,39 @@ use crate::{
 pub struct ListRequestLogsQuery {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
+    pub request_id: Option<Uuid>,
+    pub model: Option<String>,
+    pub alias: Option<String>,
+    pub provider: Option<String>,
+    pub status_code: Option<i32>,
+    pub client_ip: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct ListRequestLogsResponse {
+    pub data: Vec<RequestLogSummary>,
+    pub total: i64,
 }
 
 pub async fn list_request_logs(
     State(state): State<AppState>,
     Query(query): Query<ListRequestLogsQuery>,
-) -> AppResult<Json<Vec<RequestLogSummary>>> {
-    let limit = query.limit.unwrap_or(20);
-    let offset = query.offset.unwrap_or(0);
+) -> AppResult<Json<ListRequestLogsResponse>> {
+    let filter = RequestLogFilter {
+        limit: query.limit.or(Some(20)),
+        offset: query.offset.or(Some(0)),
+        request_id: query.request_id,
+        model: query.model,
+        alias: query.alias,
+        provider: query.provider,
+        status_code: query.status_code,
+        client_ip: query.client_ip,
+    };
 
-    let logs = logging::fetch_request_logs(&state.pool, limit, offset).await?;
+    let logs = logging::fetch_request_logs(&state.pool, &filter).await?;
+    let total = logging::count_request_logs(&state.pool, &filter).await?;
 
-    Ok(Json(logs))
+    Ok(Json(ListRequestLogsResponse { data: logs, total }))
 }
 
 pub async fn get_request_log(

@@ -1,7 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRequestLogsStore } from "@/stores/request-logs";
+import { useAliasesStore } from "@/stores/aliases";
+import { useProvidersStore } from "@/stores/providers";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -24,13 +41,15 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Eye, ChevronLeft, ChevronRight, RefreshCw, Copy, Check } from "lucide-vue-next";
+import { Loader2, Eye, ChevronLeft, ChevronRight, RefreshCw, Copy, Check, ChevronsUpDown } from "lucide-vue-next";
 import type { RequestLogSummary } from "@/api/request-logs";
 import { useClipboard } from "@vueuse/core";
 import "prismjs/themes/prism-tomorrow.css";
 import { decodeBody, getHighlightedHtml, extractAiContent } from "@/lib/utils";
 
 const store = useRequestLogsStore();
+const aliasesStore = useAliasesStore();
+const providersStore = useProvidersStore();
 const { copy, copied } = useClipboard({ legacy: true });
 
 const isDetailSheetOpen = ref(false);
@@ -38,15 +57,31 @@ const isDetailSheetOpen = ref(false);
 const limit = ref(20);
 const offset = ref(0);
 
+const openAlias = ref(false);
+const openProvider = ref(false);
+
 // Track which section was just copied to show the checkmark correctly
 const copiedSection = ref<string | null>(null);
 
 onMounted(() => {
   loadLogs();
+  aliasesStore.fetchAliases();
+  providersStore.fetchProviders();
 });
 
 async function loadLogs() {
   await store.loadRequestLogs(limit.value, offset.value);
+}
+
+function searchLogs() {
+  offset.value = 0;
+  loadLogs();
+}
+
+function clearFilters() {
+  store.filter = {};
+  offset.value = 0;
+  loadLogs();
 }
 
 async function openDetailSheet(log: RequestLogSummary) {
@@ -76,7 +111,7 @@ function previousPage() {
 }
 
 function nextPage() {
-  if (store.requestLogs.length === limit.value) {
+  if (offset.value + limit.value < store.total) {
     offset.value += limit.value;
     loadLogs();
   }
@@ -92,7 +127,11 @@ function nextPage() {
           View and analyze API request logs.
         </p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 items-center">
+        <span class="text-sm text-muted-foreground mr-2">
+          Page {{ Math.floor(offset / limit) + 1 }} of {{ Math.ceil(store.total / limit) || 1 }} ({{ store.total }}
+          entries)
+        </span>
         <Button variant="outline" size="icon" @click="loadLogs" :disabled="store.isLoading">
           <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': store.isLoading }" />
         </Button>
@@ -100,10 +139,80 @@ function nextPage() {
           <ChevronLeft class="h-4 w-4" />
         </Button>
         <Button variant="outline" size="icon" @click="nextPage"
-          :disabled="store.requestLogs.length < limit || store.isLoading">
+          :disabled="offset + limit >= store.total || store.isLoading">
           <ChevronRight class="h-4 w-4" />
         </Button>
       </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      <Input v-model="store.filter.model" placeholder="Model" class="h-8" @keyup.enter="searchLogs" />
+
+      <Popover v-model:open="openAlias">
+        <PopoverTrigger as-child>
+          <Button variant="outline" role="combobox" :aria-expanded="openAlias"
+            class="h-8 justify-between w-full font-normal" :class="!store.filter.alias && 'text-muted-foreground'">
+            {{ store.filter.alias || "Select alias..." }}
+            <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent class="w-50 p-0">
+          <Command>
+            <CommandInput class="h-9" placeholder="Search alias..." />
+            <CommandList>
+              <CommandEmpty>No alias found.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem v-for="alias in aliasesStore.aliases" :key="alias.id" :value="alias.name" @select="(ev) => {
+                  store.filter.alias = ev.detail.value === store.filter.alias ? undefined : String(ev.detail.value);
+                  openAlias = false;
+                  searchLogs();
+                }">
+                  {{ alias.name }}
+                  <Check
+                    :class="cn('ml-auto h-4 w-4', store.filter.alias === alias.name ? 'opacity-100' : 'opacity-0')" />
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <Popover v-model:open="openProvider">
+        <PopoverTrigger as-child>
+          <Button variant="outline" role="combobox" :aria-expanded="openProvider"
+            class="h-8 justify-between w-full font-normal" :class="!store.filter.provider && 'text-muted-foreground'">
+            {{ store.filter.provider || "Select provider..." }}
+            <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent class="w-50 p-0">
+          <Command>
+            <CommandInput class="h-9" placeholder="Search provider..." />
+            <CommandList>
+              <CommandEmpty>No provider found.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem v-for="provider in providersStore.providers" :key="provider.id" :value="provider.name"
+                  @select="(ev) => {
+                    store.filter.provider = ev.detail.value === store.filter.provider ? undefined : String(ev.detail.value);
+                    openProvider = false;
+                    searchLogs();
+                  }">
+                  {{ provider.name }}
+                  <Check
+                    :class="cn('ml-auto h-4 w-4', store.filter.provider === provider.name ? 'opacity-100' : 'opacity-0')" />
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <Input v-model="store.filter.client_ip" placeholder="Client IP" class="h-8" @keyup.enter="searchLogs" />
+    </div>
+    <div class="flex justify-end gap-2">
+      <Button variant="secondary" size="sm" @click="clearFilters">Clear Filters</Button>
+      <Button size="sm" @click="searchLogs">Search</Button>
     </div>
 
     <div v-if="store.error"
@@ -277,7 +386,7 @@ function nextPage() {
                 </Button>
               </div>
               <div class="overflow-x-auto max-h-150">
-                <pre class="text-sm font-mono !whitespace-pre-wrap !break-all p-4 language-json"
+                <pre class="text-sm font-mono whitespace-pre-wrap! break-all! p-4 language-json"
                   v-html="getHighlightedHtml(store.currentLog.request_body)"></pre>
               </div>
             </TabsContent>
@@ -292,7 +401,7 @@ function nextPage() {
                 </Button>
               </div>
               <div class="overflow-x-auto max-h-150">
-                <pre class="text-sm font-mono !whitespace-pre-wrap !break-all p-4 language-json"
+                <pre class="text-sm font-mono whitespace-pre-wrap! break-all! p-4 language-json"
                   v-html="getHighlightedHtml(store.currentLog.response_body)"></pre>
               </div>
             </TabsContent>

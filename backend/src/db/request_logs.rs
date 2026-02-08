@@ -1,8 +1,20 @@
 use serde::Serialize;
-use sqlx::PgPool;
+use sqlx::{PgPool, QueryBuilder};
 use uuid::Uuid;
 
 use super::types::ApiType;
+
+#[derive(Debug, Default)]
+pub struct RequestLogFilter {
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+    pub request_id: Option<Uuid>,
+    pub model: Option<String>,
+    pub alias: Option<String>,
+    pub provider: Option<String>,
+    pub status_code: Option<i32>,
+    pub client_ip: Option<String>,
+}
 
 #[derive(Debug, sqlx::FromRow, Serialize)]
 pub struct RequestLog {
@@ -65,16 +77,14 @@ pub struct RequestLogContext {
 
 pub async fn fetch_request_logs(
     pool: &PgPool,
-    limit: i64,
-    offset: i64,
+    filter: &RequestLogFilter,
 ) -> anyhow::Result<Vec<RequestLogSummary>> {
-    let logs = sqlx::query_as!(
-        RequestLogSummary,
+    let mut builder = QueryBuilder::new(
         r#"
         SELECT 
             request_id,
             gateway_key_id,
-            api_type as "api_type: ApiType",
+            api_type,
             model,
             alias,
             provider,
@@ -87,16 +97,102 @@ pub async fn fetch_request_logs(
             response_content_type,
             created_at
         FROM request_logs
-        ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2
+        WHERE 1=1
         "#,
-        limit,
-        offset
-    )
-    .fetch_all(pool)
-    .await?;
+    );
+
+    if let Some(request_id) = filter.request_id {
+        builder.push(" AND request_id = ");
+        builder.push_bind(request_id);
+    }
+
+    if let Some(model) = &filter.model {
+        builder.push(" AND model ILIKE ");
+        builder.push_bind(format!("%{}%", model));
+    }
+
+    if let Some(alias) = &filter.alias {
+        builder.push(" AND alias ILIKE ");
+        builder.push_bind(format!("%{}%", alias));
+    }
+
+    if let Some(provider) = &filter.provider {
+        builder.push(" AND provider ILIKE ");
+        builder.push_bind(format!("%{}%", provider));
+    }
+
+    if let Some(status_code) = filter.status_code {
+        builder.push(" AND status_code = ");
+        builder.push_bind(status_code);
+    }
+
+    if let Some(client_ip) = &filter.client_ip {
+        builder.push(" AND client_ip::text ILIKE ");
+        builder.push_bind(format!("%{}%", client_ip));
+    }
+
+    builder.push(" ORDER BY created_at DESC");
+
+    if let Some(limit) = filter.limit {
+        builder.push(" LIMIT ");
+        builder.push_bind(limit);
+    }
+
+    if let Some(offset) = filter.offset {
+        builder.push(" OFFSET ");
+        builder.push_bind(offset);
+    }
+
+    let logs = builder
+        .build_query_as::<RequestLogSummary>()
+        .fetch_all(pool)
+        .await?;
 
     Ok(logs)
+}
+
+pub async fn count_request_logs(
+    pool: &PgPool,
+    filter: &RequestLogFilter,
+) -> anyhow::Result<i64> {
+    let mut builder = QueryBuilder::new("SELECT count(*) FROM request_logs WHERE 1=1");
+
+    if let Some(request_id) = filter.request_id {
+        builder.push(" AND request_id = ");
+        builder.push_bind(request_id);
+    }
+
+    if let Some(model) = &filter.model {
+        builder.push(" AND model ILIKE ");
+        builder.push_bind(format!("%{}%", model));
+    }
+
+    if let Some(alias) = &filter.alias {
+        builder.push(" AND alias ILIKE ");
+        builder.push_bind(format!("%{}%", alias));
+    }
+
+    if let Some(provider) = &filter.provider {
+        builder.push(" AND provider ILIKE ");
+        builder.push_bind(format!("%{}%", provider));
+    }
+
+    if let Some(status_code) = filter.status_code {
+        builder.push(" AND status_code = ");
+        builder.push_bind(status_code);
+    }
+
+    if let Some(client_ip) = &filter.client_ip {
+        builder.push(" AND client_ip::text ILIKE ");
+        builder.push_bind(format!("%{}%", client_ip));
+    }
+
+    let count: i64 = builder
+        .build_query_scalar::<i64>()
+        .fetch_one(pool)
+        .await?;
+
+    Ok(count)
 }
 
 pub async fn fetch_request_log_detail(

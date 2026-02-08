@@ -3,6 +3,7 @@ import { computed, reactive, ref } from "vue"
 import { useAuthStore } from "@/stores/auth"
 import { useRouter, useRoute } from "vue-router"
 import { Button } from "@/components/ui/button"
+import { isDark, toggleDark } from '@/lib/useTheme'
 import {
   Card,
   CardContent,
@@ -14,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Activity, AlertCircle, CheckCircle2, Lock, User, Loader2 } from "lucide-vue-next"
+import { Activity, AlertCircle, CheckCircle2, Lock, User, Loader2, Moon, Sun } from "lucide-vue-next"
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -93,12 +94,19 @@ function onLeave(el: Element, done: () => void) {
 
 <template>
   <div
-    class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top_left,var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200">
+    class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top_left,var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors duration-500">
     <!-- Ambient Background Elements -->
-    <div class="fixed -top-[20%] -right-[10%] w-150 h-150 rounded-full bg-blue-100/40 blur-3xl -z-10 animate-pulse">
+    <div class="fixed -top-[20%] -right-[10%] w-150 h-150 rounded-full bg-blue-100/40 dark:bg-blue-900/20 blur-3xl -z-10 animate-pulse transition-colors duration-500">
     </div>
     <div
-      class="fixed -bottom-[20%] -left-[10%] w-125 h-125 rounded-full bg-emerald-50/60 blur-3xl -z-10 animate-pulse delay-1000">
+      class="fixed -bottom-[20%] -left-[10%] w-125 h-125 rounded-full bg-emerald-50/60 dark:bg-emerald-900/20 blur-3xl -z-10 animate-pulse delay-1000 transition-colors duration-500">
+    </div>
+
+    <div class="absolute top-4 right-4 z-50">
+      <Button variant="ghost" size="icon" @click="toggleDark()">
+        <Moon v-if="!isDark" class="h-5 w-5" />
+        <Sun v-else class="h-5 w-5" />
+      </Button>
     </div>
 
     <div class="w-full max-w-5xl grid lg:grid-cols-2 gap-12 items-center z-10">
@@ -106,17 +114,17 @@ function onLeave(el: Element, done: () => void) {
       <div class="hidden lg:flex flex-col gap-6">
         <div class="space-y-4">
           <div
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 bg-white/50 backdrop-blur text-xs font-semibold tracking-wider text-slate-600 uppercase">
-            <Activity class="w-3.5 h-3.5 text-blue-600" />
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 bg-white/50 dark:bg-slate-800/50 dark:border-slate-700 backdrop-blur text-xs font-semibold tracking-wider text-slate-600 dark:text-slate-300 uppercase transition-colors">
+            <Activity class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             Gateway Console
           </div>
-          <h1 class="text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+          <h1 class="text-5xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50 leading-[1.1] transition-colors">
             Route your models <br />
-            <span class="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-emerald-600">
+            <span class="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-emerald-600 dark:from-blue-400 dark:to-emerald-400">
               with precision.
             </span>
           </h1>
-          <p class="text-lg text-slate-600 leading-relaxed max-w-lg">
+          <p class="text-lg text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg transition-colors">
             Manage keys, track usage, and keep your infrastructure tuned. Secure, centralized control for your AI
             gateway.
           </p>
@@ -125,7 +133,7 @@ function onLeave(el: Element, done: () => void) {
 
       <!-- Login Card -->
       <Card
-        class="w-full max-w-100 mx-auto border-slate-200/60 shadow-xl shadow-slate-200/40 backdrop-blur-sm bg-white/90">
+        class="w-full max-w-100 mx-auto border-slate-200/60 dark:border-slate-800/60 shadow-xl shadow-slate-200/40 dark:shadow-slate-950/40 backdrop-blur-sm bg-white/90 dark:bg-slate-950/80 transition-all duration-500">
         <CardHeader class="space-y-1">
           <CardTitle class="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
           <CardDescription>Enter your credentials to access your account.</CardDescription>
