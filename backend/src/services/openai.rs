@@ -35,8 +35,54 @@ impl OpenAiService {
     pub async fn chat_completions(
         &self,
         gateway_key_id: GatewayKeyId,
+        payload: Value,
+        client_info: ClientInfo,
+    ) -> AppResult<Response<Body>> {
+        self.process_request(
+            gateway_key_id,
+            payload,
+            client_info,
+            ApiType::OpenAiChatCompletions,
+        )
+        .await
+    }
+
+    pub async fn responses(
+        &self,
+        gateway_key_id: GatewayKeyId,
+        payload: Value,
+        client_info: ClientInfo,
+    ) -> AppResult<Response<Body>> {
+        self.process_request(
+            gateway_key_id,
+            payload,
+            client_info,
+            ApiType::OpenAiResponses,
+        )
+        .await
+    }
+
+    pub async fn anthropic_messages(
+        &self,
+        gateway_key_id: GatewayKeyId,
+        payload: Value,
+        client_info: ClientInfo,
+    ) -> AppResult<Response<Body>> {
+        self.process_request(
+            gateway_key_id,
+            payload,
+            client_info,
+            ApiType::AnthropicMessages,
+        )
+        .await
+    }
+
+    async fn process_request(
+        &self,
+        gateway_key_id: GatewayKeyId,
         mut payload: Value,
         client_info: ClientInfo,
+        api_type: ApiType,
     ) -> AppResult<Response<Body>> {
         let request_id = Uuid::now_v7();
         let start = Instant::now();
@@ -46,7 +92,7 @@ impl OpenAiService {
             user_agent,
         } = client_info;
 
-        tracing::debug!(%request_id, "received chat completion request");
+        tracing::debug!(%request_id, %api_type, "received request");
 
         let payload_object = payload
             .as_object_mut()
@@ -63,7 +109,7 @@ impl OpenAiService {
             &self.pool,
             gateway_key_id.0,
             &model,
-            ApiType::OpenAiChatCompletions,
+            api_type,
         )
         .await
         {
@@ -101,17 +147,27 @@ impl OpenAiService {
             serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
 
         tracing::debug!("sending request to upstream provider");
-        let response = self
+        let mut request_builder = self
             .http_client
             .post(&url)
-            .header(
-                header::AUTHORIZATION,
-                format!("Bearer {}", route.provider_key.key),
-            )
             .header(header::CONTENT_TYPE, "application/json")
-            .body(request_body.clone())
-            .send()
-            .await;
+            .body(request_body.clone());
+
+        match api_type {
+            ApiType::AnthropicMessages => {
+                request_builder = request_builder
+                    .header("x-api-key", &route.provider_key.key)
+                    .header("anthropic-version", "2023-06-01");
+            }
+            _ => {
+                request_builder = request_builder.header(
+                    header::AUTHORIZATION,
+                    format!("Bearer {}", route.provider_key.key),
+                );
+            }
+        }
+
+        let response = request_builder.send().await;
 
         let response = match response {
             Ok(response) => {
@@ -149,7 +205,7 @@ impl OpenAiService {
                 let context = RequestLogContext {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
-                    api_type: Some(ApiType::OpenAiChatCompletions),
+                    api_type: Some(api_type),
                     model: Some(route.model_id.clone()),
                     alias: Some(route.alias_name),
                     provider: Some(route.provider_name.clone()),
@@ -223,7 +279,7 @@ impl OpenAiService {
                 let context = RequestLogContext {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
-                    api_type: Some(ApiType::OpenAiChatCompletions),
+                    api_type: Some(api_type),
                     model: Some(model_id),
                     alias: Some(alias),
                     provider: Some(provider_name),
@@ -260,7 +316,7 @@ impl OpenAiService {
             let context = RequestLogContext {
                 request_id,
                 gateway_key_id: Some(gateway_key_id.0),
-                api_type: Some(ApiType::OpenAiChatCompletions),
+                api_type: Some(api_type),
                 model: Some(model_id),
                 alias: Some(alias),
                 provider: Some(provider_name),

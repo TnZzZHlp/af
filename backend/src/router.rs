@@ -108,6 +108,14 @@ pub fn app(state: AppState) -> Router {
             "/v1/chat/completions",
             post(handlers::openai::chat_completions),
         )
+        .route(
+            "/v1/responses",
+            post(handlers::openai::responses),
+        )
+        .route(
+            "/v1/messages",
+            post(handlers::openai::anthropic_messages),
+        )
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::rate_limit::rate_limit_middleware,
