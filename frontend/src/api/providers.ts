@@ -6,6 +6,7 @@ export interface Provider {
   id: string;
   name: string;
   description: string | null;
+  brief: string | null;
   enabled: boolean;
   created_at: string;
 }
@@ -36,11 +37,13 @@ export interface ListProvidersParams {
 export interface CreateProviderRequest {
   name: string;
   description?: string;
+  brief?: string;
 }
 
 export interface UpdateProviderRequest {
   name?: string;
   description?: string;
+  brief?: string;
   enabled?: boolean;
 }
 

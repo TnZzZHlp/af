@@ -43,6 +43,7 @@ pub async fn list_providers(
 pub struct CreateProviderRequest {
     pub name: String,
     pub description: Option<String>,
+    pub brief: Option<String>,
 }
 
 pub async fn create_provider(
@@ -50,7 +51,8 @@ pub async fn create_provider(
     Json(payload): Json<CreateProviderRequest>,
 ) -> AppResult<Json<Provider>> {
     let provider =
-        providers::create_provider(&state.pool, payload.name, payload.description).await?;
+        providers::create_provider(&state.pool, payload.name, payload.description, payload.brief)
+            .await?;
     Ok(Json(provider))
 }
 
@@ -68,6 +70,7 @@ pub async fn get_provider(
 pub struct UpdateProviderRequest {
     pub name: Option<String>,
     pub description: Option<String>,
+    pub brief: Option<String>,
     pub enabled: Option<bool>,
 }
 
@@ -81,6 +84,7 @@ pub async fn update_provider(
         id,
         payload.name,
         payload.description,
+        payload.brief,
         payload.enabled,
     )
     .await?

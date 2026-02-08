@@ -66,6 +66,7 @@ const editingProviderId = ref<string | null>(null);
 const providerForm = ref({
   name: "",
   description: "",
+  brief: "",
 });
 
 // Endpoint State
@@ -109,6 +110,7 @@ function openCreateProviderSheet() {
   providerForm.value = {
     name: "",
     description: "",
+    brief: "",
   };
   isProviderSheetOpen.value = true;
 }
@@ -119,6 +121,7 @@ function openEditProviderSheet(provider: Provider) {
   providerForm.value = {
     name: provider.name,
     description: provider.description || "",
+    brief: provider.brief || "",
   };
   isProviderSheetOpen.value = true;
 }
@@ -127,6 +130,7 @@ async function handleProviderSubmit() {
   const payload = {
     name: providerForm.value.name,
     description: providerForm.value.description,
+    brief: providerForm.value.brief,
   };
 
   if (isEditingProvider.value && editingProviderId.value) {
@@ -313,6 +317,7 @@ async function copyToClipboard(text: string, id: string) {
           <TableRow>
             <TableHead class="w-7.5"></TableHead>
             <TableHead>Name</TableHead>
+            <TableHead>Brief</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created At</TableHead>
@@ -321,12 +326,12 @@ async function copyToClipboard(text: string, id: string) {
         </TableHeader>
         <TableBody>
           <TableRow v-if="store.loading && store.providers.length === 0">
-            <TableCell colspan="6" class="h-24 text-center">
+            <TableCell colspan="7" class="h-24 text-center">
               <Loader2 class="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
             </TableCell>
           </TableRow>
           <TableRow v-else-if="store.providers.length === 0">
-            <TableCell colspan="6" class="h-24 text-center text-muted-foreground">
+            <TableCell colspan="7" class="h-24 text-center text-muted-foreground">
               No providers found.
             </TableCell>
           </TableRow>
@@ -337,6 +342,10 @@ async function copyToClipboard(text: string, id: string) {
               <TableCell class="font-medium">
                 {{ provider.name }}
                 <div class="text-xs text-muted-foreground font-mono">{{ provider.id }}</div>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" v-if="provider.brief">{{ provider.brief }}</Badge>
+                <span v-else class="text-muted-foreground text-xs">-</span>
               </TableCell>
               <TableCell>{{ provider.description || '-' }}</TableCell>
               <TableCell>
@@ -369,7 +378,7 @@ async function copyToClipboard(text: string, id: string) {
               </TableCell>
             </TableRow>
             <TableRow>
-              <TableCell colspan="6" class="p-0 border-t-0">
+              <TableCell colspan="7" class="p-0 border-t-0">
                 <Accordion type="single" collapsible
                   @update:model-value="(val) => val && onAccordionItemOpen(provider.id)">
                   <AccordionItem :value="provider.id" class="border-0">
@@ -520,6 +529,12 @@ async function copyToClipboard(text: string, id: string) {
             <div class="grid gap-2">
               <Label for="provider-name">Name</Label>
               <Input id="provider-name" v-model="providerForm.name" placeholder="e.g. OpenAI" autocomplete="off" />
+            </div>
+            <div class="grid gap-2">
+              <Label for="provider-brief">Brief (Code)</Label>
+              <Input id="provider-brief" v-model="providerForm.brief" placeholder="e.g. oai"
+                autocomplete="off" />
+              <p class="text-xs text-muted-foreground">Short code for invocation (e.g. if set to 'oai', use 'oai:gpt-4' to invoke).</p>
             </div>
             <div class="grid gap-2">
               <Label for="provider-description">Description (Optional)</Label>

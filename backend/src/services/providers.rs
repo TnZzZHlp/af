@@ -19,8 +19,17 @@ pub async fn create_provider(
     pool: &PgPool,
     name: String,
     description: Option<String>,
+    brief: Option<String>,
 ) -> anyhow::Result<Provider> {
-    providers::create_provider(pool, CreateProviderParams { name, description }).await
+    providers::create_provider(
+        pool,
+        CreateProviderParams {
+            name,
+            description,
+            brief,
+        },
+    )
+    .await
 }
 
 pub async fn get_provider(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Provider>> {
@@ -32,6 +41,7 @@ pub async fn update_provider(
     id: Uuid,
     name: Option<String>,
     description: Option<String>,
+    brief: Option<String>,
     enabled: Option<bool>,
 ) -> anyhow::Result<Option<Provider>> {
     providers::update_provider(
@@ -40,6 +50,7 @@ pub async fn update_provider(
         UpdateProviderParams {
             name,
             description,
+            brief,
             enabled,
         },
     )

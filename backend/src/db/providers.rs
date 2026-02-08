@@ -8,6 +8,7 @@ pub struct Provider {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub brief: Option<String>,
     pub enabled: bool,
     pub usage_count: i64,
     #[serde(with = "time::serde::rfc3339")]
@@ -16,7 +17,7 @@ pub struct Provider {
 
 pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Provider>> {
     let row = sqlx::query!(
-        "SELECT id, name, description, enabled, usage_count, created_at
+        "SELECT id, name, description, brief, enabled, usage_count, created_at
          FROM providers
          WHERE id = $1",
         id
@@ -32,6 +33,7 @@ pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Opt
         id: row.id,
         name: row.name,
         description: row.description,
+        brief: row.brief,
         enabled: row.enabled,
         usage_count: row.usage_count,
         created_at: row.created_at,
@@ -45,7 +47,7 @@ pub async fn list_providers(
 ) -> anyhow::Result<Vec<Provider>> {
     let offset = (page - 1) * page_size;
     let rows = sqlx::query!(
-        "SELECT id, name, description, enabled, usage_count, created_at
+        "SELECT id, name, description, brief, enabled, usage_count, created_at
          FROM providers
          ORDER BY created_at DESC
          LIMIT $1 OFFSET $2",
@@ -61,6 +63,7 @@ pub async fn list_providers(
             id: row.id,
             name: row.name,
             description: row.description,
+            brief: row.brief,
             enabled: row.enabled,
             usage_count: row.usage_count,
             created_at: row.created_at,
@@ -73,6 +76,7 @@ pub async fn list_providers(
 pub struct CreateProviderParams {
     pub name: String,
     pub description: Option<String>,
+    pub brief: Option<String>,
 }
 
 pub async fn create_provider(
@@ -80,11 +84,12 @@ pub async fn create_provider(
     params: CreateProviderParams,
 ) -> anyhow::Result<Provider> {
     let row = sqlx::query!(
-        "INSERT INTO providers (name, description)
-         VALUES ($1, $2)
-         RETURNING id, name, description, enabled, usage_count, created_at",
+        "INSERT INTO providers (name, description, brief)
+         VALUES ($1, $2, $3)
+         RETURNING id, name, description, brief, enabled, usage_count, created_at",
         params.name,
-        params.description
+        params.description,
+        params.brief
     )
     .fetch_one(pool)
     .await?;
@@ -93,6 +98,7 @@ pub async fn create_provider(
         id: row.id,
         name: row.name,
         description: row.description,
+        brief: row.brief,
         enabled: row.enabled,
         usage_count: row.usage_count,
         created_at: row.created_at,
@@ -102,6 +108,7 @@ pub async fn create_provider(
 pub struct UpdateProviderParams {
     pub name: Option<String>,
     pub description: Option<String>,
+    pub brief: Option<String>,
     pub enabled: Option<bool>,
 }
 
@@ -114,11 +121,13 @@ pub async fn update_provider(
         "UPDATE providers
          SET name = COALESCE($1, name),
              description = COALESCE($2, description),
-             enabled = COALESCE($3, enabled)
-         WHERE id = $4
-         RETURNING id, name, description, enabled, usage_count, created_at",
+             brief = COALESCE($3, brief),
+             enabled = COALESCE($4, enabled)
+         WHERE id = $5
+         RETURNING id, name, description, brief, enabled, usage_count, created_at",
         params.name,
         params.description,
+        params.brief,
         params.enabled,
         id
     )
@@ -133,6 +142,7 @@ pub async fn update_provider(
         id: row.id,
         name: row.name,
         description: row.description,
+        brief: row.brief,
         enabled: row.enabled,
         usage_count: row.usage_count,
         created_at: row.created_at,
