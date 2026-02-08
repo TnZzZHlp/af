@@ -12,15 +12,14 @@ use uuid::Uuid;
 
 use crate::{
     db::{
-        alias_targets::AliasTargetDetail, provider_keys::ProviderKey,
-        request_logs::RequestLogContext, types::ApiType,
+        provider_keys::{self, UpdateKeyParams},
+        request_logs::RequestLogContext,
+        types::ApiType,
     },
     error::{AppError, AppResult},
     middleware::{auth::GatewayKeyId, request_log::ClientInfo},
-    services::{auth, logging, providers, routing},
+    services::{logging, providers, routing},
 };
-
-use crate::db::provider_keys::{self, UpdateKeyParams};
 
 #[derive(Clone)]
 pub struct OpenAiService {
@@ -60,56 +59,34 @@ impl OpenAiService {
 
         tracing::debug!(%model, "extracted model from payload");
 
-        let whitelist = auth::fetch_model_whitelist(&self.pool, gateway_key_id.0).await?;
-        if !whitelist.is_empty() {
-            tracing::debug!(?whitelist, "checking model whitelist");
-            if !whitelist.iter().any(|entry| entry == &model) {
-                tracing::debug!("model not in whitelist");
-                return Err(AppError::Forbidden);
-            }
-        } else {
-            tracing::debug!("whitelist is empty, skipping check");
-        }
-
-        tracing::debug!("fetching alias target details");
-        let targets: Vec<AliasTargetDetail> =
-            routing::fetch_alias_target_details(&self.pool, &model, ApiType::OpenAiChatCompletions)
-                .await?;
-
-        let target = targets
-            .first()
-            .ok_or_else(|| AppError::BadRequest(format!("unknown model alias: {model}")))?;
-
-        tracing::debug!(
-            provider_id = %target.provider_id,
-            provider_name = %target.provider_name,
-            target_model_id = %target.model_id,
-            "resolved alias target"
-        );
+        let route = match routing::resolve_route(
+            &self.pool,
+            gateway_key_id.0,
+            &model,
+            ApiType::OpenAiChatCompletions,
+        )
+        .await
+        {
+            Ok(route) => route,
+            Err(err) => match err.downcast::<AppError>() {
+                Ok(app_err) => return Err(app_err),
+                Err(other_err) => return Err(AppError::Internal(other_err)),
+            },
+        };
 
         let pool = self.pool.clone();
-        let provider_id = target.provider_id;
+        let provider_id = route.provider_id;
         tokio::spawn(async move {
             let _ = providers::increment_usage_count(&pool, provider_id).await;
         });
 
-        tracing::debug!("fetching provider keys");
-        let provider_keys: Vec<ProviderKey> =
-            routing::fetch_provider_keys(&self.pool, target.provider_id).await?;
-
-        let provider_key = provider_keys
-            .first()
-            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("no provider keys available")))?;
-
-        tracing::debug!(provider_key_id = %provider_key.id, "selected provider key");
-
         let pool = self.pool.clone();
-        let key_id = provider_key.id;
+        let key_id = route.provider_key.id;
         tokio::spawn(async move {
             let _ = provider_keys::increment_usage_count(&pool, key_id).await;
         });
 
-        payload_object.insert("model".to_string(), Value::String(target.model_id.clone()));
+        payload_object.insert("model".to_string(), Value::String(route.model_id.clone()));
         let stream = payload_object
             .get("stream")
             .and_then(Value::as_bool)
@@ -117,10 +94,7 @@ impl OpenAiService {
 
         tracing::debug!(stream, "processing stream option");
 
-        let url = target.endpoint_url.clone().ok_or_else(|| {
-            AppError::Internal(anyhow::anyhow!("no endpoint url found for target provider"))
-        })?;
-
+        let url = route.endpoint_url;
         tracing::debug!(%url, "target endpoint url");
 
         let request_body =
@@ -132,7 +106,7 @@ impl OpenAiService {
             .post(&url)
             .header(
                 header::AUTHORIZATION,
-                format!("Bearer {}", provider_key.key),
+                format!("Bearer {}", route.provider_key.key),
             )
             .header(header::CONTENT_TYPE, "application/json")
             .body(request_body.clone())
@@ -145,12 +119,12 @@ impl OpenAiService {
 
                 if response.status() == reqwest::StatusCode::UNAUTHORIZED {
                     tracing::warn!(
-                        provider_key_id = %provider_key.id,
-                        provider_id = %target.provider_id,
+                        provider_key_id = %route.provider_key.id,
+                        provider_id = %route.provider_id,
                         "upstream returned 401 Unauthorized, disabling provider key"
                     );
                     let pool = self.pool.clone();
-                    let key_id = provider_key.id;
+                    let key_id = route.provider_key.id;
                     tokio::spawn(async move {
                         if let Err(e) = provider_keys::update_key(
                             &pool,
@@ -176,9 +150,9 @@ impl OpenAiService {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
                     api_type: Some(ApiType::OpenAiChatCompletions),
-                    model: Some(target.model_id.clone()),
-                    alias: Some(model),
-                    provider: Some(target.provider_name.clone()),
+                    model: Some(route.model_id.clone()),
+                    alias: Some(route.alias_name),
+                    provider: Some(route.provider_name.clone()),
                     endpoint: Some(url),
                     status_code: None,
                     latency_ms: Some(latency_ms),
@@ -206,9 +180,10 @@ impl OpenAiService {
             .and_then(|v| v.to_str().ok())
             .map(|s| s.to_string());
 
-        let model_id = target.model_id.clone();
-        let provider_name = target.provider_name.clone();
+        let model_id = route.model_id.clone();
+        let provider_name = route.provider_name.clone();
         let endpoint = url.clone();
+        let alias = route.alias_name.clone();
 
         let response = if stream {
             let (response_body_tx, response_body_rx) = tokio::sync::oneshot::channel::<Vec<u8>>();
@@ -239,7 +214,6 @@ impl OpenAiService {
                 .map_err(|err| AppError::Internal(err.into()))?;
 
             let pool = self.pool.clone();
-            let alias = model.clone();
             let request_body = request_body.clone();
             let response_content_type = response_content_type.clone();
             let client_ip = client_ip.clone();
@@ -288,7 +262,7 @@ impl OpenAiService {
                 gateway_key_id: Some(gateway_key_id.0),
                 api_type: Some(ApiType::OpenAiChatCompletions),
                 model: Some(model_id),
-                alias: Some(model),
+                alias: Some(alias),
                 provider: Some(provider_name),
                 endpoint: Some(endpoint),
                 status_code: Some(status.as_u16() as i32),

@@ -40,6 +40,34 @@ pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Opt
     }))
 }
 
+pub async fn fetch_provider_by_brief(
+    pool: &PgPool,
+    brief: &str,
+) -> anyhow::Result<Option<Provider>> {
+    let row = sqlx::query!(
+        "SELECT id, name, description, brief, enabled, usage_count, created_at
+         FROM providers
+         WHERE brief = $1",
+        brief
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    let Some(row) = row else {
+        return Ok(None);
+    };
+
+    Ok(Some(Provider {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        brief: row.brief,
+        enabled: row.enabled,
+        usage_count: row.usage_count,
+        created_at: row.created_at,
+    }))
+}
+
 pub async fn list_providers(
     pool: &PgPool,
     page: i64,

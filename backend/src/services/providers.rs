@@ -36,6 +36,10 @@ pub async fn get_provider(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Prov
     providers::fetch_provider_by_id(pool, id).await
 }
 
+pub async fn get_provider_by_brief(pool: &PgPool, brief: &str) -> anyhow::Result<Option<Provider>> {
+    providers::fetch_provider_by_brief(pool, brief).await
+}
+
 pub async fn update_provider(
     pool: &PgPool,
     id: Uuid,
