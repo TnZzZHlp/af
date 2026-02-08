@@ -11,6 +11,10 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
+    db::{
+        alias_targets::AliasTargetDetail, provider_keys::ProviderKey,
+        request_logs::RequestLogContext, types::ApiType,
+    },
     error::{AppError, AppResult},
     middleware::{auth::GatewayKeyId, request_log::ClientInfo},
     services::{auth, logging, providers, routing},
@@ -68,12 +72,9 @@ impl OpenAiService {
         }
 
         tracing::debug!("fetching alias target details");
-        let targets: Vec<routing::AliasTargetDetail> = routing::fetch_alias_target_details(
-            &self.pool,
-            &model,
-            logging::ApiType::OpenAiChatCompletions,
-        )
-        .await?;
+        let targets: Vec<AliasTargetDetail> =
+            routing::fetch_alias_target_details(&self.pool, &model, ApiType::OpenAiChatCompletions)
+                .await?;
 
         let target = targets
             .first()
@@ -93,7 +94,7 @@ impl OpenAiService {
         });
 
         tracing::debug!("fetching provider keys");
-        let provider_keys: Vec<routing::ProviderKey> =
+        let provider_keys: Vec<ProviderKey> =
             routing::fetch_provider_keys(&self.pool, target.provider_id).await?;
 
         let provider_key = provider_keys
@@ -171,10 +172,10 @@ impl OpenAiService {
             Err(err) => {
                 tracing::debug!(error = %err, "upstream request failed");
                 let latency_ms = elapsed_ms(start);
-                let context = logging::RequestLogContext {
+                let context = RequestLogContext {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
-                    api_type: Some(logging::ApiType::OpenAiChatCompletions),
+                    api_type: Some(ApiType::OpenAiChatCompletions),
                     model: Some(target.model_id.clone()),
                     alias: Some(model),
                     provider: Some(target.provider_name.clone()),
@@ -245,10 +246,10 @@ impl OpenAiService {
             let user_agent = user_agent.clone();
             tokio::spawn(async move {
                 let response_body = response_body_rx.await.ok();
-                let context = logging::RequestLogContext {
+                let context = RequestLogContext {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
-                    api_type: Some(logging::ApiType::OpenAiChatCompletions),
+                    api_type: Some(ApiType::OpenAiChatCompletions),
                     model: Some(model_id),
                     alias: Some(alias),
                     provider: Some(provider_name),
@@ -282,10 +283,10 @@ impl OpenAiService {
                 .body(Body::from(bytes))
                 .map_err(|err| AppError::Internal(err.into()))?;
 
-            let context = logging::RequestLogContext {
+            let context = RequestLogContext {
                 request_id,
                 gateway_key_id: Some(gateway_key_id.0),
-                api_type: Some(logging::ApiType::OpenAiChatCompletions),
+                api_type: Some(ApiType::OpenAiChatCompletions),
                 model: Some(model_id),
                 alias: Some(model),
                 provider: Some(provider_name),

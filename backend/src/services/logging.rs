@@ -1,10 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::request_logs;
-pub use crate::db::request_logs::RequestLog;
-pub use crate::db::request_logs::RequestLogSummary;
-pub use crate::db::types::ApiType;
+use crate::db::request_logs::{self, RequestLog, RequestLogContext, RequestLogSummary};
 
 pub async fn fetch_request_logs(
     pool: &PgPool,
@@ -19,24 +16,6 @@ pub async fn fetch_request_log_detail(
     request_id: Uuid,
 ) -> anyhow::Result<Option<RequestLog>> {
     request_logs::fetch_request_log_detail(pool, request_id).await
-}
-
-pub struct RequestLogContext {
-    pub request_id: Uuid,
-    pub gateway_key_id: Option<Uuid>,
-    pub api_type: Option<ApiType>,
-    pub model: Option<String>,
-    pub alias: Option<String>,
-    pub provider: Option<String>,
-    pub endpoint: Option<String>,
-    pub status_code: Option<i32>,
-    pub latency_ms: Option<i32>,
-    pub client_ip: Option<String>,
-    pub user_agent: Option<String>,
-    pub request_body: Option<Vec<u8>>,
-    pub response_body: Option<Vec<u8>>,
-    pub request_content_type: Option<String>,
-    pub response_content_type: Option<String>,
 }
 
 pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyhow::Result<()> {

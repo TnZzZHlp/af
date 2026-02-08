@@ -6,8 +6,9 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
+    db::request_logs::{RequestLog, RequestLogSummary},
     error::{AppError, AppResult},
-    services::logging::{self, RequestLog, RequestLogSummary},
+    services::logging::{self},
     state::AppState,
 };
 

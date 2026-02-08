@@ -4,15 +4,10 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::{gateway_key_models, gateway_keys};
-
-#[derive(Debug, Clone)]
-pub struct GatewayKey {
-    pub id: Uuid,
-    pub name: Option<String>,
-    pub rate_limit_rps: Option<i32>,
-    pub rate_limit_rpm: Option<i32>,
-}
+use crate::db::{
+    gateway_key_models,
+    gateway_keys::{self, GatewayKey},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -60,17 +55,9 @@ pub fn extract_api_key(headers: &HeaderMap) -> Option<String> {
 }
 
 pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<Option<GatewayKey>> {
-    let key = match gateway_keys::fetch_gateway_key(pool, api_key).await? {
-        Some(key) => key,
-        None => return Ok(None),
-    };
+    let key = gateway_keys::fetch_gateway_key(pool, api_key).await?;
 
-    Ok(Some(GatewayKey {
-        id: key.id,
-        name: key.name,
-        rate_limit_rps: key.rate_limit_rps,
-        rate_limit_rpm: key.rate_limit_rpm,
-    }))
+    Ok(key)
 }
 
 pub async fn fetch_model_whitelist(
