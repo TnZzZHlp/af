@@ -100,19 +100,15 @@ impl OpenAiService {
             .await
             .map_err(|e| AppError::Internal(e.into()))?;
 
-        let data = body
-            .get("data")
-            .and_then(|v| v.as_array())
-            .ok_or_else(|| {
-                AppError::Internal(
-                    anyhow::anyhow!(
-                        "Invalid response format: 'data' field missing or not an array"
-                    ),
-                )
-            })?;
+        let data = body.get("data").and_then(|v| v.as_array()).ok_or_else(|| {
+            AppError::Internal(anyhow::anyhow!(
+                "Invalid response format: 'data' field missing or not an array"
+            ))
+        })?;
 
-        let provider_models: Vec<ProviderModel> = serde_json::from_value(Value::Array(data.clone()))
-            .map_err(|e| AppError::Internal(e.into()))?;
+        let provider_models: Vec<ProviderModel> =
+            serde_json::from_value(Value::Array(data.clone()))
+                .map_err(|e| AppError::Internal(e.into()))?;
 
         let models = provider_models
             .into_iter()
@@ -201,20 +197,14 @@ impl OpenAiService {
 
         tracing::debug!(%model, "extracted model from payload");
 
-        let route = match routing::resolve_route(
-            &self.pool,
-            gateway_key_id.0,
-            &model,
-            api_type,
-        )
-        .await
-        {
-            Ok(route) => route,
-            Err(err) => match err.downcast::<AppError>() {
-                Ok(app_err) => return Err(app_err),
-                Err(other_err) => return Err(AppError::Internal(other_err)),
-            },
-        };
+        let route =
+            match routing::resolve_route(&self.pool, gateway_key_id.0, &model, api_type).await {
+                Ok(route) => route,
+                Err(err) => match err.downcast::<AppError>() {
+                    Ok(app_err) => return Err(app_err),
+                    Err(other_err) => return Err(AppError::Internal(other_err)),
+                },
+            };
 
         let pool = self.pool.clone();
         let provider_id = route.provider_id;
@@ -375,11 +365,12 @@ impl OpenAiService {
             let user_agent = user_agent.clone();
             tokio::spawn(async move {
                 let response_body = response_body_rx.await.ok();
-                let (prompt_tokens, completion_tokens, total_tokens) = if let Some(body) = &response_body {
-                    extract_usage(body, api_type)
-                } else {
-                    (None, None, None)
-                };
+                let (prompt_tokens, completion_tokens, total_tokens) =
+                    if let Some(body) = &response_body {
+                        extract_usage(body, api_type)
+                    } else {
+                        (None, None, None)
+                    };
 
                 let context = RequestLogContext {
                     request_id,
@@ -517,39 +508,47 @@ fn extract_usage(body: &[u8], api_type: ApiType) -> (Option<i32>, Option<i32>, O
                 continue;
             }
             if let Ok(json) = serde_json::from_str::<Value>(json_str)
-                 && let Some(usage) = json.get("usage") {
-                    // Same extraction logic as above
-                     match api_type {
-                        ApiType::OpenAiChatCompletions | ApiType::OpenAiResponses => {
-                            let prompt = usage
-                                .get("prompt_tokens")
-                                .and_then(Value::as_i64)
-                                .map(|v| v as i32);
-                            let completion = usage
-                                .get("completion_tokens")
-                                .and_then(Value::as_i64)
-                                .map(|v| v as i32);
-                            let total = usage
-                                .get("total_tokens")
-                                .and_then(Value::as_i64)
-                                .map(|v| v as i32);
-                            if prompt.is_some() || completion.is_some() || total.is_some() {
-                                return (prompt, completion, total);
-                            }
+                && let Some(usage) = json.get("usage")
+            {
+                // Same extraction logic as above
+                match api_type {
+                    ApiType::OpenAiChatCompletions | ApiType::OpenAiResponses => {
+                        let prompt = usage
+                            .get("prompt_tokens")
+                            .and_then(Value::as_i64)
+                            .map(|v| v as i32);
+                        let completion = usage
+                            .get("completion_tokens")
+                            .and_then(Value::as_i64)
+                            .map(|v| v as i32);
+                        let total = usage
+                            .get("total_tokens")
+                            .and_then(Value::as_i64)
+                            .map(|v| v as i32);
+                        if prompt.is_some() || completion.is_some() || total.is_some() {
+                            return (prompt, completion, total);
                         }
-                        ApiType::AnthropicMessages => {
-                             // Anthropic streaming usage is different (message_delta), but for now let's see if usage is present
-                             if let Some(input) = usage.get("input_tokens").and_then(Value::as_i64).map(|v| v as i32) {
-                                let output = usage.get("output_tokens").and_then(Value::as_i64).map(|v| v as i32);
-                                let total = output.map(|o| input + o);
-                                return (Some(input), output, total);
-                             }
-                        }
-                        ApiType::OpenAiModels => {}
                     }
+                    ApiType::AnthropicMessages => {
+                        // Anthropic streaming usage is different (message_delta), but for now let's see if usage is present
+                        if let Some(input) = usage
+                            .get("input_tokens")
+                            .and_then(Value::as_i64)
+                            .map(|v| v as i32)
+                        {
+                            let output = usage
+                                .get("output_tokens")
+                                .and_then(Value::as_i64)
+                                .map(|v| v as i32);
+                            let total = output.map(|o| input + o);
+                            return (Some(input), output, total);
+                        }
+                    }
+                    ApiType::OpenAiModels => {}
                 }
+            }
         }
     }
-    
+
     (None, None, None)
 }
