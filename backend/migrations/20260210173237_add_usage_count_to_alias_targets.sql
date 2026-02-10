@@ -1,0 +1,2 @@
+ALTER TABLE alias_targets
+ADD COLUMN usage_count BIGINT NOT NULL DEFAULT 0;

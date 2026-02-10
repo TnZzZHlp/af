@@ -23,7 +23,8 @@
               "Enum": [
                 "openai_chat_completions",
                 "openai_responses",
-                "anthropic_messages"
+                "anthropic_messages",
+                "openai_models"
               ]
             }
           }
@@ -55,7 +56,8 @@
               "Enum": [
                 "openai_chat_completions",
                 "openai_responses",
-                "anthropic_messages"
+                "anthropic_messages",
+                "openai_models"
               ]
             }
           }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id\n         JOIN providers p\n           ON p.id = at.provider_id\n         WHERE a.id = $1\n         ORDER BY p.usage_count ASC, p.id",
+  "query": "SELECT\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id\n         JOIN providers p\n           ON p.id = at.provider_id\n         WHERE a.id = $1\n         ORDER BY at.usage_count ASC, p.id",
   "describe": {
     "columns": [
       {
@@ -40,16 +40,21 @@
       },
       {
         "ordinal": 7,
+        "name": "usage_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
         "name": "model_id",
         "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "enabled",
         "type_info": "Bool"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -69,8 +74,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "5289a330ce434ebe16f6a3a0e5fe48b39ec4479e848a96e3c2a52f3b8ca3fda7"
+  "hash": "01a97fcf06750f4f486d166739353ea00281af3535ae32959d188a19b0374def"
 }

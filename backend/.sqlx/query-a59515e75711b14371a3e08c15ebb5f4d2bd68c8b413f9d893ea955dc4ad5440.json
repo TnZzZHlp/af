@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT DISTINCT ON (p.usage_count, p.id)\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            pe.id AS provider_endpoint_id,\n            pe.url AS endpoint_url,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN providers p\n           ON p.id = at.provider_id AND p.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true\n         WHERE a.name = $1 AND a.enabled = true\n         ORDER BY p.usage_count ASC, p.id",
+  "query": "SELECT DISTINCT ON (at.usage_count, at.id)\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            pe.id AS provider_endpoint_id,\n            pe.url AS endpoint_url,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN providers p\n           ON p.id = at.provider_id AND p.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true\n         WHERE a.name = $1 AND a.enabled = true\n         ORDER BY at.usage_count ASC, at.id",
   "describe": {
     "columns": [
       {
@@ -40,26 +40,31 @@
       },
       {
         "ordinal": 7,
+        "name": "usage_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
         "name": "provider_endpoint_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "endpoint_url",
         "type_info": "Text"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "model_id",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "enabled",
         "type_info": "Bool"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -74,7 +79,8 @@
               "Enum": [
                 "openai_chat_completions",
                 "openai_responses",
-                "anthropic_messages"
+                "anthropic_messages",
+                "openai_models"
               ]
             }
           }
@@ -93,8 +99,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "58e16dc3ce0fe5041752341b73339c991490fdf0f9200114fd2742ea8f20da94"
+  "hash": "a59515e75711b14371a3e08c15ebb5f4d2bd68c8b413f9d893ea955dc4ad5440"
 }

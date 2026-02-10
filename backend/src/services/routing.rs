@@ -39,6 +39,7 @@ pub async fn resolve_route(
     // 2. Resolve target
     tracing::debug!("resolving target");
     let mut targets = Vec::new();
+    let mut is_alias_match = false;
 
     if let Some((brief, real_model)) = model.split_once(':') {
         tracing::debug!(brief, real_model, "detected potential provider brief in model name");
@@ -64,6 +65,7 @@ pub async fn resolve_route(
                     provider_id: provider.id,
                     provider_name: provider.name,
                     provider_usage_count: provider.usage_count,
+                    usage_count: 0,
                     provider_endpoint_id: Some(endpoint.id),
                     endpoint_url: Some(endpoint.url),
                     model_id: real_model.to_string(),
@@ -81,6 +83,7 @@ pub async fn resolve_route(
     if targets.is_empty() {
         tracing::debug!("fetching alias target details");
         targets = fetch_alias_target_details(pool, model, api_type).await?;
+        is_alias_match = true;
     }
 
     let target = targets
@@ -93,6 +96,11 @@ pub async fn resolve_route(
         target_model_id = %target.model_id,
         "resolved alias target"
     );
+
+    if is_alias_match {
+        tracing::debug!(alias_target_id = %target.alias_target_id, "incrementing alias target usage count");
+        alias_targets::increment_usage_count(pool, target.alias_target_id).await?;
+    }
 
     // 3. Fetch provider keys
     tracing::debug!("fetching provider keys");

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO alias_targets (alias_id, provider_id, model_id)\n         VALUES ($1, $2, $3)\n         RETURNING id, alias_id, provider_id, model_id, enabled, created_at",
+  "query": "INSERT INTO alias_targets (alias_id, provider_id, model_id)\n         VALUES ($1, $2, $3)\n         RETURNING id, alias_id, provider_id, model_id, usage_count, enabled, created_at",
   "describe": {
     "columns": [
       {
@@ -25,11 +25,16 @@
       },
       {
         "ordinal": 4,
+        "name": "usage_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
         "name": "enabled",
         "type_info": "Bool"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -47,8 +52,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "7a0d0fe326dd777014f059eeaa1fdaee0b5edaf34f3d5caf8fb67ebd84706ac2"
+  "hash": "9061346284a5828f38181d2e2677de1a7cc8b9175fda74695265cc9b05349953"
 }

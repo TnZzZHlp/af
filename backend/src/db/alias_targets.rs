@@ -11,6 +11,7 @@ pub struct AliasTarget {
     pub alias_id: Uuid,
     pub provider_id: Uuid,
     pub model_id: String,
+    pub usage_count: i64,
     pub enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -25,6 +26,7 @@ pub struct AliasTargetDetail {
     pub provider_id: Uuid,
     pub provider_name: String,
     pub provider_usage_count: i64,
+    pub usage_count: i64,
     pub provider_endpoint_id: Option<Uuid>,
     pub endpoint_url: Option<String>,
     pub model_id: String,
@@ -46,6 +48,7 @@ pub async fn fetch_all_alias_target_details(
             p.id AS provider_id,
             p.name AS provider_name,
             p.usage_count AS provider_usage_count,
+            at.usage_count,
             at.model_id,
             at.enabled,
             at.created_at
@@ -55,7 +58,7 @@ pub async fn fetch_all_alias_target_details(
          JOIN providers p
            ON p.id = at.provider_id
          WHERE a.id = $1
-         ORDER BY p.usage_count ASC, p.id",
+         ORDER BY at.usage_count ASC, p.id",
         alias_id
     )
     .fetch_all(pool)
@@ -71,6 +74,7 @@ pub async fn fetch_all_alias_target_details(
             provider_id: row.provider_id,
             provider_name: row.provider_name,
             provider_usage_count: row.provider_usage_count,
+            usage_count: row.usage_count,
             provider_endpoint_id: None,
             endpoint_url: None,
             model_id: row.model_id,
@@ -95,7 +99,7 @@ pub async fn create_alias_target(
     let row = sqlx::query!(
         "INSERT INTO alias_targets (alias_id, provider_id, model_id)
          VALUES ($1, $2, $3)
-         RETURNING id, alias_id, provider_id, model_id, enabled, created_at",
+         RETURNING id, alias_id, provider_id, model_id, usage_count, enabled, created_at",
         params.alias_id,
         params.provider_id,
         params.model_id
@@ -108,6 +112,7 @@ pub async fn create_alias_target(
         alias_id: row.alias_id,
         provider_id: row.provider_id,
         model_id: row.model_id,
+        usage_count: row.usage_count,
         enabled: row.enabled,
         created_at: row.created_at,
     })
@@ -131,7 +136,7 @@ pub async fn update_alias_target(
             model_id = COALESCE($2, model_id),
             enabled = COALESCE($3, enabled)
          WHERE id = $4
-         RETURNING id, alias_id, provider_id, model_id, enabled, created_at",
+         RETURNING id, alias_id, provider_id, model_id, usage_count, enabled, created_at",
         params.provider_id,
         params.model_id,
         params.enabled,
@@ -149,6 +154,7 @@ pub async fn update_alias_target(
         alias_id: row.alias_id,
         provider_id: row.provider_id,
         model_id: row.model_id,
+        usage_count: row.usage_count,
         enabled: row.enabled,
         created_at: row.created_at,
     }))
@@ -171,7 +177,7 @@ pub async fn fetch_alias_target_details(
     // We distinct on provider_id to avoid duplicates if multiple endpoints exist.
     // We just pick one endpoint (e.g. max ID or whatever) since we assume any valid endpoint for the provider+api_type works.
     let rows = sqlx::query!(
-        "SELECT DISTINCT ON (p.usage_count, p.id)
+        "SELECT DISTINCT ON (at.usage_count, at.id)
             at.id,
             a.id AS alias_id,
             a.name AS alias_name,
@@ -179,6 +185,7 @@ pub async fn fetch_alias_target_details(
             p.id AS provider_id,
             p.name AS provider_name,
             p.usage_count AS provider_usage_count,
+            at.usage_count,
             pe.id AS provider_endpoint_id,
             pe.url AS endpoint_url,
             at.model_id,
@@ -192,7 +199,7 @@ pub async fn fetch_alias_target_details(
          JOIN provider_endpoints pe
            ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true
          WHERE a.name = $1 AND a.enabled = true
-         ORDER BY p.usage_count ASC, p.id",
+         ORDER BY at.usage_count ASC, at.id",
         alias_name,
         api_type as _
     )
@@ -209,6 +216,7 @@ pub async fn fetch_alias_target_details(
             provider_id: row.provider_id,
             provider_name: row.provider_name,
             provider_usage_count: row.provider_usage_count,
+            usage_count: row.usage_count,
             provider_endpoint_id: Some(row.provider_endpoint_id),
             endpoint_url: Some(row.endpoint_url),
             model_id: row.model_id,
@@ -219,3 +227,18 @@ pub async fn fetch_alias_target_details(
 
     Ok(details)
 }
+
+pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+    sqlx::query!(
+        "UPDATE alias_targets SET usage_count = usage_count + 1 WHERE id = $1",
+        id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+
+
+
+
