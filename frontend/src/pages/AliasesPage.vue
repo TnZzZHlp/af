@@ -74,6 +74,7 @@ const editingTargetId = ref<string | null>(null);
 const currentAliasId = ref<string | null>(null);
 const availableModels = ref<Model[]>([]);
 const loadingModels = ref(false);
+const modelsFetchFailed = ref(false);
 
 const targetForm = ref({
   provider_id: "",
@@ -83,16 +84,19 @@ const targetForm = ref({
 watch(() => targetForm.value.provider_id, async (newProviderId) => {
   if (newProviderId) {
     loadingModels.value = true;
+    modelsFetchFailed.value = false;
     try {
       availableModels.value = await listProviderModels(newProviderId);
     } catch (error) {
       console.error("Failed to fetch models:", error);
       availableModels.value = [];
+      modelsFetchFailed.value = true;
     } finally {
       loadingModels.value = false;
     }
   } else {
     availableModels.value = [];
+    modelsFetchFailed.value = false;
   }
 });
 
@@ -165,6 +169,7 @@ function openCreateTargetSheet(aliasId: string) {
   isEditingTarget.value = false;
   editingTargetId.value = null;
   availableModels.value = [];
+  modelsFetchFailed.value = false;
   targetForm.value = {
     provider_id: "",
     model_id: "",
@@ -445,20 +450,32 @@ function formatDate(dateStr: string) {
             </div>
             <div class="grid gap-2">
               <Label for="target-model-id">Model</Label>
-              <Select v-model="targetForm.model_id" :disabled="!targetForm.provider_id || loadingModels">
-                <SelectTrigger id="target-model-id">
-                  <div class="flex items-center gap-2">
-                    <Loader2 v-if="loadingModels" class="h-3 w-3 animate-spin" />
-                    <SelectValue placeholder="Select a model" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="model in availableModels" :key="model.id" :value="model.id">
-                    {{ model.id }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p v-if="!targetForm.provider_id" class="text-xs text-muted-foreground">Select a provider first.</p>
+              <template v-if="availableModels.length > 0 || loadingModels">
+                <Select v-model="targetForm.model_id" :disabled="loadingModels">
+                  <SelectTrigger id="target-model-id">
+                    <div class="flex items-center gap-2">
+                      <Loader2 v-if="loadingModels" class="h-3 w-3 animate-spin" />
+                      <SelectValue placeholder="Select a model" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="model in availableModels" :key="model.id" :value="model.id">
+                      {{ model.id }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </template>
+              <template v-else>
+                <Input id="target-model-id" v-model="targetForm.model_id" placeholder="e.g. gpt-4o"
+                  :disabled="!targetForm.provider_id" />
+                <p v-if="modelsFetchFailed && targetForm.provider_id" class="text-xs text-amber-600">
+                  Could not fetch models from provider. Please enter model ID manually.
+                </p>
+                <p v-else-if="targetForm.provider_id && !loadingModels" class="text-xs text-muted-foreground">
+                  Enter the model identifier manually.
+                </p>
+                <p v-else class="text-xs text-muted-foreground">Select a provider first.</p>
+              </template>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">
