@@ -49,7 +49,9 @@ async fn main() -> anyhow::Result<()> {
         .connect(&config.database.url)
         .await?;
 
+    tracing::info!("running database migrations");
     sqlx::migrate!("./migrations").run(&pool).await?;
+    tracing::info!("database migrations complete");
 
     let http_client = reqwest::Client::new();
     let openai = OpenAiService::new(pool.clone(), http_client);

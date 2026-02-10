@@ -415,13 +415,12 @@ fn extract_usage(body: &[u8], api_type: ApiType) -> (Option<i32>, Option<i32>, O
     // OpenAi usage in stream: data: {"...": ..., "usage": {...}}
     // It might be one of the last data chunks.
     for line in body_str.lines().rev() {
-        if line.starts_with("data: ") {
-            let json_str = &line[6..];
+        if let Some(json_str) = line.strip_prefix("data: ") {
             if json_str == "[DONE]" {
                 continue;
             }
-            if let Ok(json) = serde_json::from_str::<Value>(json_str) {
-                 if let Some(usage) = json.get("usage") {
+            if let Ok(json) = serde_json::from_str::<Value>(json_str)
+                 && let Some(usage) = json.get("usage") {
                     // Same extraction logic as above
                      match api_type {
                         ApiType::OpenAiChatCompletions | ApiType::OpenAiResponses => {
@@ -445,13 +444,12 @@ fn extract_usage(body: &[u8], api_type: ApiType) -> (Option<i32>, Option<i32>, O
                              // Anthropic streaming usage is different (message_delta), but for now let's see if usage is present
                              if let Some(input) = usage.get("input_tokens").and_then(Value::as_i64).map(|v| v as i32) {
                                 let output = usage.get("output_tokens").and_then(Value::as_i64).map(|v| v as i32);
-                                let total = if let Some(o) = output { Some(input + o) } else { None };
+                                let total = output.map(|o| input + o);
                                 return (Some(input), output, total);
                              }
                         }
                     }
                 }
-            }
         }
     }
     

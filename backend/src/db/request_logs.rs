@@ -104,16 +104,14 @@ pub async fn fetch_request_logs(
             user_agent,
             request_content_type,
             response_content_type,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
             created_at
         FROM request_logs
         WHERE 1=1
         "#,
     );
-
-    if let Some(request_id) = filter.request_id {
-        builder.push(" AND request_id = ");
-        builder.push_bind(request_id);
-    }
 
     if let Some(model) = &filter.model {
         builder.push(" AND model ILIKE ");
@@ -160,10 +158,7 @@ pub async fn fetch_request_logs(
     Ok(logs)
 }
 
-pub async fn count_request_logs(
-    pool: &PgPool,
-    filter: &RequestLogFilter,
-) -> anyhow::Result<i64> {
+pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> anyhow::Result<i64> {
     let mut builder = QueryBuilder::new("SELECT count(*) FROM request_logs WHERE 1=1");
 
     if let Some(request_id) = filter.request_id {
@@ -196,10 +191,7 @@ pub async fn count_request_logs(
         builder.push_bind(format!("%{}%", client_ip));
     }
 
-    let count: i64 = builder
-        .build_query_scalar::<i64>()
-        .fetch_one(pool)
-        .await?;
+    let count: i64 = builder.build_query_scalar::<i64>().fetch_one(pool).await?;
 
     Ok(count)
 }
