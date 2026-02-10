@@ -34,6 +34,7 @@ If you add tests later, document the single-test command here.
 Run these from `backend/`.
 
 - Build: `cargo build`
+- Build (Release): `cargo build --release`
 - Run: `cargo run`
 - Check: `cargo check`
 - Format: `cargo fmt`
@@ -42,8 +43,14 @@ Run these from `backend/`.
 - Test (single): `cargo test <test_name>`
 - Test (module): `cargo test <module>::<test_name>`
 
-SQLx notes: no `sqlx` CLI scripts are defined; if you introduce migrations
-or offline validation, add the commands here.
+#### SQLx Workflows
+
+The project uses `sqlx` with offline mode enabled (via `.sqlx` directory).
+
+- Run migrations: `sqlx migrate run` (requires `DATABASE_URL` set)
+- Create migration: `sqlx migrate add <description>`
+- Update offline data: `cargo sqlx prepare` (run this after changing queries)
+- Check offline data: `cargo sqlx prepare --check`
 
 ## Code Style Guidelines
 
@@ -84,8 +91,10 @@ or offline validation, add the commands here.
 
 #### SQLx Usage
 
-- Use `sqlx::query!!` with bind parameters (no string interpolation).
-- Map rows explicitly via `try_get` to avoid accidental schema drift.
+- Use `sqlx::query!` and `sqlx::query_as!` macros for compile-time verification.
+- Ensure `cargo sqlx prepare` is run after modifying queries to update `.sqlx` data.
+- Use bind parameters (no string interpolation).
+- Map rows explicitly via `try_get` when manual mapping is necessary, but prefer `query_as!` macros.
 
 ### Vue Frontend
 
