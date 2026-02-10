@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            request_id,\n            gateway_key_id,\n            api_type as \"api_type: ApiType\",\n            model,\n            alias,\n            provider,\n            endpoint,\n            status_code,\n            latency_ms,\n            client_ip::text as client_ip,\n            user_agent,\n            request_body,\n            response_body,\n            request_content_type,\n            response_content_type,\n            created_at\n        FROM request_logs\n        WHERE request_id = $1\n        ",
+  "query": "\n        SELECT \n            request_id,\n            gateway_key_id,\n            api_type as \"api_type: ApiType\",\n            model,\n            alias,\n            provider,\n            endpoint,\n            status_code,\n            latency_ms,\n            client_ip::text as client_ip,\n            user_agent,\n            request_body,\n            response_body,\n            request_content_type,\n            response_content_type,\n            prompt_tokens,\n            completion_tokens,\n            total_tokens,\n            created_at\n        FROM request_logs\n        WHERE request_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -91,6 +91,21 @@
       },
       {
         "ordinal": 15,
+        "name": "prompt_tokens",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "completion_tokens",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "total_tokens",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -116,8 +131,11 @@
       true,
       true,
       true,
+      true,
+      true,
+      true,
       false
     ]
   },
-  "hash": "1316d664b8f304955df4bfdac84df9682240dfe7e60d0b05e9b5ba13c240159b"
+  "hash": "20931d01529c5047540131204eff98798c3ecda50f34d4b381f68474c0727c8e"
 }
