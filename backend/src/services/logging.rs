@@ -42,6 +42,9 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
         response_body: context.response_body.clone(),
         request_content_type: context.request_content_type.clone(),
         response_content_type: context.response_content_type.clone(),
+        prompt_tokens: context.prompt_tokens,
+        completion_tokens: context.completion_tokens,
+        total_tokens: context.total_tokens,
     };
 
     request_logs::record_request(pool, &db_context).await

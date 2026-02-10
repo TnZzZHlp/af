@@ -218,6 +218,9 @@ impl OpenAiService {
                     response_body: Some(err.to_string().into_bytes()),
                     request_content_type: Some("application/json".to_string()),
                     response_content_type: Some("text/plain".to_string()),
+                    prompt_tokens: None,
+                    completion_tokens: None,
+                    total_tokens: None,
                 };
                 let pool = self.pool.clone();
                 tokio::spawn(async move {
@@ -276,6 +279,12 @@ impl OpenAiService {
             let user_agent = user_agent.clone();
             tokio::spawn(async move {
                 let response_body = response_body_rx.await.ok();
+                let (prompt_tokens, completion_tokens, total_tokens) = if let Some(body) = &response_body {
+                    extract_usage(body, api_type)
+                } else {
+                    (None, None, None)
+                };
+
                 let context = RequestLogContext {
                     request_id,
                     gateway_key_id: Some(gateway_key_id.0),
@@ -292,6 +301,9 @@ impl OpenAiService {
                     response_body,
                     request_content_type: Some("application/json".to_string()),
                     response_content_type,
+                    prompt_tokens,
+                    completion_tokens,
+                    total_tokens,
                 };
                 if let Err(err) = logging::record_request(&pool, &context).await {
                     tracing::error!(error = %err, "failed to record request log");
@@ -313,6 +325,9 @@ impl OpenAiService {
                 .body(Body::from(bytes))
                 .map_err(|err| AppError::Internal(err.into()))?;
 
+            let (prompt_tokens, completion_tokens, total_tokens) =
+                extract_usage(&response_body, api_type);
+
             let context = RequestLogContext {
                 request_id,
                 gateway_key_id: Some(gateway_key_id.0),
@@ -329,6 +344,9 @@ impl OpenAiService {
                 response_body: Some(response_body),
                 request_content_type: Some("application/json".to_string()),
                 response_content_type,
+                prompt_tokens,
+                completion_tokens,
+                total_tokens,
             };
             let pool = self.pool.clone();
             tokio::spawn(async move {
@@ -346,4 +364,96 @@ impl OpenAiService {
 
 fn elapsed_ms(start: Instant) -> i32 {
     i32::try_from(start.elapsed().as_millis()).unwrap_or(i32::MAX)
+}
+
+fn extract_usage(body: &[u8], api_type: ApiType) -> (Option<i32>, Option<i32>, Option<i32>) {
+    // Try to parse as JSON first (non-streaming)
+    if let Ok(json) = serde_json::from_slice::<Value>(body) {
+        match api_type {
+            ApiType::OpenAiChatCompletions | ApiType::OpenAiResponses => {
+                if let Some(usage) = json.get("usage") {
+                    let prompt = usage
+                        .get("prompt_tokens")
+                        .and_then(Value::as_i64)
+                        .map(|v| v as i32);
+                    let completion = usage
+                        .get("completion_tokens")
+                        .and_then(Value::as_i64)
+                        .map(|v| v as i32);
+                    let total = usage
+                        .get("total_tokens")
+                        .and_then(Value::as_i64)
+                        .map(|v| v as i32);
+                    return (prompt, completion, total);
+                }
+            }
+            ApiType::AnthropicMessages => {
+                if let Some(usage) = json.get("usage") {
+                    let input = usage
+                        .get("input_tokens")
+                        .and_then(Value::as_i64)
+                        .map(|v| v as i32);
+                    let output = usage
+                        .get("output_tokens")
+                        .and_then(Value::as_i64)
+                        .map(|v| v as i32);
+                    let total = if let (Some(i), Some(o)) = (input, output) {
+                        Some(i + o)
+                    } else {
+                        None
+                    };
+                    return (input, output, total);
+                }
+            }
+        }
+    }
+
+    // parsing as JSON failed, maybe it is a streaming response (SSE)
+    // We look for the "usage" field in the last few lines
+    // This is a rough heuristic.
+    let body_str = String::from_utf8_lossy(body);
+    // OpenAi usage in stream: data: {"...": ..., "usage": {...}}
+    // It might be one of the last data chunks.
+    for line in body_str.lines().rev() {
+        if line.starts_with("data: ") {
+            let json_str = &line[6..];
+            if json_str == "[DONE]" {
+                continue;
+            }
+            if let Ok(json) = serde_json::from_str::<Value>(json_str) {
+                 if let Some(usage) = json.get("usage") {
+                    // Same extraction logic as above
+                     match api_type {
+                        ApiType::OpenAiChatCompletions | ApiType::OpenAiResponses => {
+                            let prompt = usage
+                                .get("prompt_tokens")
+                                .and_then(Value::as_i64)
+                                .map(|v| v as i32);
+                            let completion = usage
+                                .get("completion_tokens")
+                                .and_then(Value::as_i64)
+                                .map(|v| v as i32);
+                            let total = usage
+                                .get("total_tokens")
+                                .and_then(Value::as_i64)
+                                .map(|v| v as i32);
+                            if prompt.is_some() || completion.is_some() || total.is_some() {
+                                return (prompt, completion, total);
+                            }
+                        }
+                        ApiType::AnthropicMessages => {
+                             // Anthropic streaming usage is different (message_delta), but for now let's see if usage is present
+                             if let Some(input) = usage.get("input_tokens").and_then(Value::as_i64).map(|v| v as i32) {
+                                let output = usage.get("output_tokens").and_then(Value::as_i64).map(|v| v as i32);
+                                let total = if let Some(o) = output { Some(input + o) } else { None };
+                                return (Some(input), output, total);
+                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    (None, None, None)
 }

@@ -356,6 +356,18 @@ function nextPage() {
                   <span class="font-semibold block text-muted-foreground">User Agent</span>
                   <span class="text-xs break-all">{{ store.currentLog.user_agent || '-' }}</span>
                 </div>
+                <div>
+                  <span class="font-semibold block text-muted-foreground">Prompt Tokens</span>
+                  <span>{{ store.currentLog.prompt_tokens ?? '-' }}</span>
+                </div>
+                <div>
+                  <span class="font-semibold block text-muted-foreground">Completion Tokens</span>
+                  <span>{{ store.currentLog.completion_tokens ?? '-' }}</span>
+                </div>
+                <div>
+                  <span class="font-semibold block text-muted-foreground">Total Tokens</span>
+                  <span>{{ store.currentLog.total_tokens ?? '-' }}</span>
+                </div>
               </div>
             </TabsContent>
 

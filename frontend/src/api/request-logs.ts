@@ -15,6 +15,9 @@ export interface RequestLogSummary {
   user_agent: string | null;
   request_content_type: string | null;
   response_content_type: string | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
   created_at: string;
 }
 
@@ -34,6 +37,9 @@ export interface RequestLog {
   response_body: number[] | null;
   request_content_type: string | null;
   response_content_type: string | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
   created_at: string;
 }
 

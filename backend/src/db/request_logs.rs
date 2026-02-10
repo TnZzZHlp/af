@@ -33,6 +33,9 @@ pub struct RequestLog {
     pub response_body: Option<Vec<u8>>,
     pub request_content_type: Option<String>,
     pub response_content_type: Option<String>,
+    pub prompt_tokens: Option<i32>,
+    pub completion_tokens: Option<i32>,
+    pub total_tokens: Option<i32>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,
 }
@@ -53,6 +56,9 @@ pub struct RequestLogSummary {
     // Bodies excluded
     pub request_content_type: Option<String>,
     pub response_content_type: Option<String>,
+    pub prompt_tokens: Option<i32>,
+    pub completion_tokens: Option<i32>,
+    pub total_tokens: Option<i32>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,
 }
@@ -73,6 +79,9 @@ pub struct RequestLogContext {
     pub response_body: Option<Vec<u8>>,
     pub request_content_type: Option<String>,
     pub response_content_type: Option<String>,
+    pub prompt_tokens: Option<i32>,
+    pub completion_tokens: Option<i32>,
+    pub total_tokens: Option<i32>,
 }
 
 pub async fn fetch_request_logs(
@@ -218,6 +227,9 @@ pub async fn fetch_request_log_detail(
             response_body,
             request_content_type,
             response_content_type,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
             created_at
         FROM request_logs
         WHERE request_id = $1
@@ -256,11 +268,14 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
             request_body,
             response_body,
             request_content_type,
-            response_content_type
+            response_content_type,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7,
                 $8, $9, $10::inet, $11, $12, $13,
-                $14, $15
+                $14, $15, $16, $17, $18
             )",
         context.request_id,
         context.gateway_key_id,
@@ -276,7 +291,10 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
         context.request_body.as_deref(),
         context.response_body.as_deref(),
         context.request_content_type.as_deref(),
-        context.response_content_type.as_deref()
+        context.response_content_type.as_deref(),
+        context.prompt_tokens,
+        context.completion_tokens,
+        context.total_tokens
     )
     .execute(pool)
     .await?;
