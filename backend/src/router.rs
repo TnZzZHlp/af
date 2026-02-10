@@ -1,4 +1,5 @@
 use axum::{
+    extract::DefaultBodyLimit,
     Router, middleware as axum_middleware,
     routing::{get, post, put},
 };
@@ -139,6 +140,7 @@ pub fn app(state: AppState) -> Router {
             ),
         )
         .merge(ai_routes)
+        .layer(DefaultBodyLimit::max(100 * 1024 * 1024))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             middleware::request_log::request_log_middleware,
