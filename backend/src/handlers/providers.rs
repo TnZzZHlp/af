@@ -206,3 +206,13 @@ pub async fn delete_key(
         Err(AppError::NotFound)
     }
 }
+
+// Models
+
+pub async fn list_provider_models(
+    State(state): State<AppState>,
+    Path(provider_id): Path<Uuid>,
+) -> AppResult<Json<Vec<crate::services::openai::Model>>> {
+    let models = state.openai.list_models(provider_id).await?;
+    Ok(Json(models))
+}

@@ -293,6 +293,7 @@ function prettyApiType(apiType: string) {
   const mapping: Record<string, string> = {
     openai_chat_completions: "OpenAI Chat Completions",
     openai_responses: "OpenAI Responses",
+    openai_models: "OpenAI Models",
     anthropic_messages: "Anthropic Messages",
   };
   return mapping[apiType] || apiType;
@@ -591,6 +592,7 @@ function prettyApiType(apiType: string) {
                 <SelectContent>
                   <SelectItem value="openai_chat_completions">OpenAI Chat Completions</SelectItem>
                   <SelectItem value="openai_responses">OpenAI Responses</SelectItem>
+                  <SelectItem value="openai_models">OpenAI Models</SelectItem>
                   <SelectItem value="anthropic_messages">Anthropic Messages</SelectItem>
                 </SelectContent>
               </Select>

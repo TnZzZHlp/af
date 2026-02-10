@@ -8,6 +8,9 @@ pub enum ApiType {
     #[sqlx(rename = "openai_responses")]
     #[serde(rename = "openai_responses")]
     OpenAiResponses,
+    #[sqlx(rename = "openai_models")]
+    #[serde(rename = "openai_models")]
+    OpenAiModels,
     #[sqlx(rename = "anthropic_messages")]
     #[serde(rename = "anthropic_messages")]
     AnthropicMessages,
@@ -18,6 +21,7 @@ impl std::fmt::Display for ApiType {
         match self {
             Self::OpenAiChatCompletions => write!(f, "openai_chat_completions"),
             Self::OpenAiResponses => write!(f, "openai_responses"),
+            Self::OpenAiModels => write!(f, "openai_models"),
             Self::AnthropicMessages => write!(f, "anthropic_messages"),
         }
     }
@@ -30,6 +34,7 @@ impl std::str::FromStr for ApiType {
         match s {
             "openai_chat_completions" => Ok(Self::OpenAiChatCompletions),
             "openai_responses" => Ok(Self::OpenAiResponses),
+            "openai_models" => Ok(Self::OpenAiModels),
             "anthropic_messages" => Ok(Self::AnthropicMessages),
             _ => Err(anyhow::anyhow!("unknown api_type: {}", s)),
         }

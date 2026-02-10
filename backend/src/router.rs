@@ -51,6 +51,10 @@ pub fn app(state: AppState) -> Router {
         .route(
             "/providers/{id}/keys/{key_id}",
             put(handlers::providers::update_key).delete(handlers::providers::delete_key),
+        )
+        .route(
+            "/providers/{id}/models",
+            get(handlers::providers::list_provider_models),
         );
 
     let alias_routes = Router::new()
