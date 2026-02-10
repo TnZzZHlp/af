@@ -1,72 +1,72 @@
 name: Deploy Frontend
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "frontend/**"
-  workflow_dispatch:
+    push:
+        branches: [main]
+        paths:
+            - "frontend/**"
+    workflow_dispatch:
 
 concurrency:
-  group: deploy-backend-${{ github.ref }}
-  cancel-in-progress: true
+    group: deploy-frontend-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-  deploy-frontend:
-    runs-on: ubuntu-latest
+    deploy-frontend:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+            - name: Install pnpm
+              run: npm install -g pnpm
 
-      - name: Cache pnpm modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            frontend/node_modules
-            ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm
+            - name: Cache pnpm modules
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      frontend/node_modules
+                      ~/.pnpm-store
+                  key: ${{ runner.os }}-pnpm
 
-      - name: Install frontend dependencies
-        run: cd frontend && pnpm install
+            - name: Install frontend dependencies
+              run: cd frontend && pnpm install
 
-      - name: Build frontend
-        run: cd frontend && pnpm build
+            - name: Build frontend
+              run: cd frontend && pnpm build
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SERVER_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          chmod 700 ~/.ssh
-          ssh-keyscan -p 9999 $SERVER_IP >> ~/.ssh/known_hosts
-          echo "SSH directory contents:"
-          ls -la ~/.ssh
-          echo "Private key fingerprint:"
-          ssh-keygen -lf ~/.ssh/id_ed25519
-        shell: bash
-        env:
-          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
-          SERVER_IP: ${{ secrets.SERVER_IP }}
+            - name: Setup SSH
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "$SERVER_SSH_KEY" > ~/.ssh/id_ed25519
+                  chmod 600 ~/.ssh/id_ed25519
+                  chmod 700 ~/.ssh
+                  ssh-keyscan -p 9999 $SERVER_IP >> ~/.ssh/known_hosts
+                  echo "SSH directory contents:"
+                  ls -la ~/.ssh
+                  echo "Private key fingerprint:"
+                  ssh-keygen -lf ~/.ssh/id_ed25519
+              shell: bash
+              env:
+                  SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+                  SERVER_IP: ${{ secrets.SERVER_IP }}
 
-      - name: Deploy frontend to server
-        run: |
-          # Test SSH connection with verbose output
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o LogLevel=VERBOSE -p 9999 root@$SERVER_IP "echo 'SSH connection successful'"
+            - name: Deploy frontend to server
+              run: |
+                  # Test SSH connection with verbose output
+                  ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o LogLevel=VERBOSE -p 9999 root@$SERVER_IP "echo 'SSH connection successful'"
 
-          # Prepare temp directory for frontend deployment
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top_tmp && mkdir -p /www/ai.tnzzz.top_tmp"
+                  # Prepare temp directory for frontend deployment
+                  ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top_tmp && mkdir -p /www/ai.tnzzz.top_tmp"
 
-          # Upload built frontend files to temp directory
-          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r frontend/dist/* root@$SERVER_IP:/www/ai.tnzzz.top_tmp/
+                  # Upload built frontend files to temp directory
+                  scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r frontend/dist/* root@$SERVER_IP:/www/ai.tnzzz.top_tmp/
 
-          # Swap temp directory into place
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top_prev || true && if [ -d /www/ai.tnzzz.top ]; then mv /www/ai.tnzzz.top /www/ai.tnzzz.top_prev; fi && mv /www/ai.tnzzz.top_tmp /www/ai.tnzzz.top"
-        env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
+                  # Swap temp directory into place
+                  ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top_prev || true && if [ -d /www/ai.tnzzz.top ]; then mv /www/ai.tnzzz.top /www/ai.tnzzz.top_prev; fi && mv /www/ai.tnzzz.top_tmp /www/ai.tnzzz.top"
+              env:
+                  SERVER_IP: ${{ secrets.SERVER_IP }}
