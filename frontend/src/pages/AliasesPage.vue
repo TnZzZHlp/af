@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useAliasesStore } from "@/stores/aliases";
 import { useProvidersStore } from "@/stores/providers";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Alias, AliasTargetDetail } from "@/api/aliases";
+import { listProviderModels, type Model } from "@/api/providers";
 
 const store = useAliasesStore();
 const providersStore = useProvidersStore();
@@ -71,10 +72,28 @@ const isTargetSheetOpen = ref(false);
 const isEditingTarget = ref(false);
 const editingTargetId = ref<string | null>(null);
 const currentAliasId = ref<string | null>(null);
+const availableModels = ref<Model[]>([]);
+const loadingModels = ref(false);
 
 const targetForm = ref({
   provider_id: "",
   model_id: "",
+});
+
+watch(() => targetForm.value.provider_id, async (newProviderId) => {
+  if (newProviderId) {
+    loadingModels.value = true;
+    try {
+      availableModels.value = await listProviderModels(newProviderId);
+    } catch (error) {
+      console.error("Failed to fetch models:", error);
+      availableModels.value = [];
+    } finally {
+      loadingModels.value = false;
+    }
+  } else {
+    availableModels.value = [];
+  }
 });
 
 // Delete Confirmation State
@@ -145,6 +164,7 @@ function openCreateTargetSheet(aliasId: string) {
   currentAliasId.value = aliasId;
   isEditingTarget.value = false;
   editingTargetId.value = null;
+  availableModels.value = [];
   targetForm.value = {
     provider_id: "",
     model_id: "",
@@ -160,6 +180,9 @@ function openEditTargetSheet(aliasId: string, target: AliasTargetDetail) {
     provider_id: target.provider_id,
     model_id: target.model_id,
   };
+  // Trigger fetch models immediately since we set provider_id
+  // The watch will handle it, but since we are synchronous here, it might trigger after.
+  // Actually, watch is triggered on next tick usually or if reactive value changes.
   isTargetSheetOpen.value = true;
 }
 
@@ -421,10 +444,21 @@ function formatDate(dateStr: string) {
               </Select>
             </div>
             <div class="grid gap-2">
-              <Label for="target-model-id">Model ID</Label>
-              <Input id="target-model-id" v-model="targetForm.model_id" placeholder="e.g. gpt-4o" />
-              <p class="text-xs text-muted-foreground">Enter the model identifier used by the provider.
-              </p>
+              <Label for="target-model-id">Model</Label>
+              <Select v-model="targetForm.model_id" :disabled="!targetForm.provider_id || loadingModels">
+                <SelectTrigger id="target-model-id">
+                  <div class="flex items-center gap-2">
+                    <Loader2 v-if="loadingModels" class="h-3 w-3 animate-spin" />
+                    <SelectValue placeholder="Select a model" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="model in availableModels" :key="model.id" :value="model.id">
+                    {{ model.id }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p v-if="!targetForm.provider_id" class="text-xs text-muted-foreground">Select a provider first.</p>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">

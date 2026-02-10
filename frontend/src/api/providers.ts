@@ -68,6 +68,14 @@ export interface UpdateKeyRequest {
   enabled?: boolean;
 }
 
+export interface Model {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+  api_type: ApiType;
+}
+
 // Provider API
 export async function listProviders(params: ListProvidersParams = {}): Promise<Provider[]> {
   const query = new URLSearchParams();
@@ -147,7 +155,19 @@ export async function updateKey(providerId: string, keyId: string, payload: Upda
 }
 
 export async function deleteKey(providerId: string, keyId: string): Promise<void> {
+
   await requestJson<void>(`/providers/${providerId}/keys/${keyId}`, {
+
     method: "DELETE",
+
   });
+
+}
+
+
+
+export async function listProviderModels(providerId: string): Promise<Model[]> {
+
+  return requestJson<Model[]>(`/providers/${providerId}/models`);
+
 }
