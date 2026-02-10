@@ -17,7 +17,7 @@ const pageTitle = computed(() => {
 </script>
 
 <template>
-  <SidebarProvider class="h-screen overflow-hidden">
+  <SidebarProvider class="h-dvh overflow-hidden">
     <AppSidebar />
     <SidebarInset class="flex flex-col overflow-hidden">
       <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
