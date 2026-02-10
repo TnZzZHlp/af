@@ -1,24 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { useRequestLogsStore } from "@/stores/request-logs";
 import { useAliasesStore } from "@/stores/aliases";
 import { useProvidersStore } from "@/stores/providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -41,11 +27,12 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Eye, ChevronLeft, ChevronRight, RefreshCw, Copy, Check, ChevronsUpDown } from "lucide-vue-next";
+import { Loader2, Eye, ChevronLeft, ChevronRight, RefreshCw, Copy, Check } from "lucide-vue-next";
 import type { RequestLogSummary } from "@/api/request-logs";
 import { useClipboard } from "@vueuse/core";
 import "prismjs/themes/prism-tomorrow.css";
 import { decodeBody, getHighlightedHtml, extractAiContent } from "@/lib/utils";
+import Combobox from "@/components/Combobox.vue";
 
 const store = useRequestLogsStore();
 const aliasesStore = useAliasesStore();
@@ -57,11 +44,16 @@ const isDetailSheetOpen = ref(false);
 const limit = ref(20);
 const offset = ref(0);
 
-const openAlias = ref(false);
-const openProvider = ref(false);
-
 // Track which section was just copied to show the checkmark correctly
 const copiedSection = ref<string | null>(null);
+
+const aliasOptions = computed(() =>
+  aliasesStore.aliases.map((a) => ({ value: a.name, label: a.name }))
+);
+
+const providerOptions = computed(() =>
+  providersStore.providers.map((p) => ({ value: p.name, label: p.name }))
+);
 
 onMounted(() => {
   loadLogs();
@@ -149,64 +141,27 @@ function nextPage() {
     <div class="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
       <Input v-model="store.filter.model" placeholder="Model" class="h-8" @keyup.enter="searchLogs" />
 
-      <Popover v-model:open="openAlias">
-        <PopoverTrigger as-child>
-          <Button variant="outline" role="combobox" :aria-expanded="openAlias"
-            class="h-8 justify-between w-full font-normal" :class="!store.filter.alias && 'text-muted-foreground'">
-            {{ store.filter.alias || "Select alias..." }}
-            <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent class="w-50 p-0">
-          <Command>
-            <CommandInput class="h-9" placeholder="Search alias..." />
-            <CommandList>
-              <CommandEmpty>No alias found.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem v-for="alias in aliasesStore.aliases" :key="alias.id" :value="alias.name" @select="(ev) => {
-                  store.filter.alias = ev.detail.value === store.filter.alias ? undefined : String(ev.detail.value);
-                  openAlias = false;
-                  searchLogs();
-                }">
-                  {{ alias.name }}
-                  <Check
-                    :class="cn('ml-auto h-4 w-4', store.filter.alias === alias.name ? 'opacity-100' : 'opacity-0')" />
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <Combobox
+        :model-value="store.filter.alias"
+        :options="aliasOptions"
+        placeholder="Select alias..."
+        search-placeholder="Search alias..."
+        empty-text="No alias found."
+        unselectable
+        class="h-8"
+        @update:model-value="(val) => { store.filter.alias = val ? String(val) : undefined; searchLogs(); }"
+      />
 
-      <Popover v-model:open="openProvider">
-        <PopoverTrigger as-child>
-          <Button variant="outline" role="combobox" :aria-expanded="openProvider"
-            class="h-8 justify-between w-full font-normal" :class="!store.filter.provider && 'text-muted-foreground'">
-            {{ store.filter.provider || "Select provider..." }}
-            <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent class="w-50 p-0">
-          <Command>
-            <CommandInput class="h-9" placeholder="Search provider..." />
-            <CommandList>
-              <CommandEmpty>No provider found.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem v-for="provider in providersStore.providers" :key="provider.id" :value="provider.name"
-                  @select="(ev) => {
-                    store.filter.provider = ev.detail.value === store.filter.provider ? undefined : String(ev.detail.value);
-                    openProvider = false;
-                    searchLogs();
-                  }">
-                  {{ provider.name }}
-                  <Check
-                    :class="cn('ml-auto h-4 w-4', store.filter.provider === provider.name ? 'opacity-100' : 'opacity-0')" />
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <Combobox
+        :model-value="store.filter.provider"
+        :options="providerOptions"
+        placeholder="Select provider..."
+        search-placeholder="Search provider..."
+        empty-text="No provider found."
+        unselectable
+        class="h-8"
+        @update:model-value="(val) => { store.filter.provider = val ? String(val) : undefined; searchLogs(); }"
+      />
 
       <Input v-model="store.filter.client_ip" placeholder="Client IP" class="h-8" @keyup.enter="searchLogs" />
     </div>

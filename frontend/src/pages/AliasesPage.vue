@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch, computed } from "vue";
 import { useAliasesStore } from "@/stores/aliases";
 import { useProvidersStore } from "@/stores/providers";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Combobox from "@/components/Combobox.vue";
 import type { Alias, AliasTargetDetail } from "@/api/aliases";
 import { listProviderModels, type Model } from "@/api/providers";
 
@@ -80,6 +81,10 @@ const targetForm = ref({
   provider_id: "",
   model_id: "",
 });
+
+const modelOptions = computed(() =>
+  availableModels.value.map((m) => ({ value: m.id, label: m.id }))
+);
 
 watch(() => targetForm.value.provider_id, async (newProviderId) => {
   if (newProviderId) {
@@ -451,19 +456,14 @@ function formatDate(dateStr: string) {
             <div class="grid gap-2">
               <Label for="target-model-id">Model</Label>
               <template v-if="availableModels.length > 0 || loadingModels">
-                <Select v-model="targetForm.model_id" :disabled="loadingModels">
-                  <SelectTrigger id="target-model-id">
-                    <div class="flex items-center gap-2">
-                      <Loader2 v-if="loadingModels" class="h-3 w-3 animate-spin" />
-                      <SelectValue placeholder="Select a model" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="model in availableModels" :key="model.id" :value="model.id">
-                      {{ model.id }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  v-model="targetForm.model_id"
+                  :options="modelOptions"
+                  :loading="loadingModels"
+                  placeholder="Select a model..."
+                  search-placeholder="Search model..."
+                  empty-text="No model found."
+                />
               </template>
               <template v-else>
                 <Input id="target-model-id" v-model="targetForm.model_id" placeholder="e.g. gpt-4o"
