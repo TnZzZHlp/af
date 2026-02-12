@@ -19,7 +19,7 @@ const pageTitle = computed(() => {
 <template>
   <SidebarProvider class="h-svh overflow-hidden">
     <AppSidebar />
-    <SidebarInset class="flex flex-col overflow-hidden">
+    <SidebarInset class="flex flex-col overflow-hidden max-h-svh">
       <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="mr-2 h-4" />
