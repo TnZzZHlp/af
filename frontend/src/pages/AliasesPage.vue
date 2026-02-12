@@ -351,6 +351,7 @@ function formatDate(dateStr: string) {
                               <TableRow>
                                 <TableHead>Provider</TableHead>
                                 <TableHead>Model</TableHead>
+                                <TableHead>Usage</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead class="text-right">Actions</TableHead>
                               </TableRow>
@@ -359,6 +360,7 @@ function formatDate(dateStr: string) {
                               <TableRow v-for="target in store.targets[alias.id]" :key="target.alias_target_id">
                                 <TableCell>{{ target.provider_name }}</TableCell>
                                 <TableCell>{{ target.model_id }}</TableCell>
+                                <TableCell>{{ target.usage_count }}</TableCell>
                                 <TableCell>
                                   <div class="h-2 w-2 rounded-full cursor-pointer"
                                     :class="target.enabled ? 'bg-green-500' : 'bg-gray-400'"

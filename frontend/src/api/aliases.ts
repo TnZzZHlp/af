@@ -12,6 +12,7 @@ export interface AliasTarget {
   alias_id: string;
   provider_id: string;
   model_id: string;
+  usage_count: number;
   enabled: boolean;
   created_at: string;
 }
