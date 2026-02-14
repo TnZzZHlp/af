@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -16,10 +16,10 @@ pub async fn list_gateway_keys(
 fn generate_random_key() -> String {
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     const LENGTH: usize = 32;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let key: String = (0..LENGTH)
         .map(|_| {
-            let idx = rng.gen_range(0..CHARSET.len());
+            let idx = rng.random_range(0..CHARSET.len());
             CHARSET[idx] as char
         })
         .collect();
