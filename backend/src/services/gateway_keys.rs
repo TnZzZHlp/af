@@ -1,4 +1,4 @@
-use argon2::password_hash::{rand_core::OsRng, SaltString};
+use rand::Rng;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -13,13 +13,26 @@ pub async fn list_gateway_keys(
     gateway_keys::list_gateway_keys(pool, page_size, offset).await
 }
 
+fn generate_random_key() -> String {
+    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const LENGTH: usize = 32;
+    let mut rng = rand::thread_rng();
+    let key: String = (0..LENGTH)
+        .map(|_| {
+            let idx = rng.gen_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
+        .collect();
+    format!("sk-{}", key)
+}
+
 pub async fn create_gateway_key(
     pool: &PgPool,
     name: Option<String>,
     rate_limit_rps: Option<i32>,
     rate_limit_rpm: Option<i32>,
 ) -> anyhow::Result<GatewayKey> {
-    let key = format!("sk-{}", SaltString::generate(&mut OsRng).as_str());
+    let key = generate_random_key();
 
     let params = gateway_keys::CreateGatewayKeyParams {
         name,

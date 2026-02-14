@@ -1,6 +1,7 @@
 use axum::{
+    Router,
     extract::DefaultBodyLimit,
-    Router, middleware as axum_middleware,
+    middleware as axum_middleware,
     routing::{get, post, put},
 };
 use tower_http::trace::{

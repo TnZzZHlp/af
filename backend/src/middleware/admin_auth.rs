@@ -1,4 +1,9 @@
-use axum::{extract::{ConnectInfo, State}, http::Request, middleware::Next, response::IntoResponse};
+use axum::{
+    extract::{ConnectInfo, State},
+    http::Request,
+    middleware::Next,
+    response::IntoResponse,
+};
 use std::net::SocketAddr;
 use uuid::Uuid;
 
@@ -16,8 +21,10 @@ pub async fn admin_auth_middleware(
     let ip = addr.ip().to_string();
 
     if state.login_protection.is_banned(&ip).await {
-        return AppError::Forbidden("IP permanently banned due to excessive login failures".to_string())
-            .into_response();
+        return AppError::Forbidden(
+            "IP permanently banned due to excessive login failures".to_string(),
+        )
+        .into_response();
     }
 
     let token = auth::extract_api_key(req.headers());

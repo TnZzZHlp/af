@@ -30,3 +30,4 @@ time = { version = "0.3.47", features = ["serde", "serde-well-known"] }
 uuid = { version = "1.20.0", features = ["v7", "serde"] }
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 tower-http = { version = "0.6.8", features = ["trace"] }
+rand = "0.8"

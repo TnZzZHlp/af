@@ -50,9 +50,13 @@ pub async fn create_provider(
     State(state): State<AppState>,
     Json(payload): Json<CreateProviderRequest>,
 ) -> AppResult<Json<Provider>> {
-    let provider =
-        providers::create_provider(&state.pool, payload.name, payload.description, payload.brief)
-            .await?;
+    let provider = providers::create_provider(
+        &state.pool,
+        payload.name,
+        payload.description,
+        payload.brief,
+    )
+    .await?;
     Ok(Json(provider))
 }
 

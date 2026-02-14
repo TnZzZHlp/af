@@ -15,9 +15,7 @@ use tracing_subscriber::EnvFilter;
 
 use crate::{
     config::load_config,
-    services::{
-        auth::LoginProtection, openai::OpenAiService, rate_limit::RateLimiter,
-    },
+    services::{auth::LoginProtection, openai::OpenAiService, rate_limit::RateLimiter},
     state::AppState,
 };
 

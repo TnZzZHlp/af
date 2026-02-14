@@ -1,4 +1,7 @@
-use axum::{Json, extract::{ConnectInfo, State}};
+use axum::{
+    Json,
+    extract::{ConnectInfo, State},
+};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -30,8 +33,8 @@ pub async fn login(
         ));
     }
 
-    let user = users::authenticate_user(&state.pool, payload.username.trim(), &payload.password)
-        .await?;
+    let user =
+        users::authenticate_user(&state.pool, payload.username.trim(), &payload.password).await?;
 
     let user = match user {
         Some(u) => u,

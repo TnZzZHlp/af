@@ -42,7 +42,11 @@ pub async fn resolve_route(
     let mut is_alias_match = false;
 
     if let Some((brief, real_model)) = model.split_once(':') {
-        tracing::debug!(brief, real_model, "detected potential provider brief in model name");
+        tracing::debug!(
+            brief,
+            real_model,
+            "detected potential provider brief in model name"
+        );
         if let Ok(Some(provider)) = providers::get_provider_by_brief(pool, brief).await {
             tracing::debug!(
                 provider_id = %provider.id,
@@ -53,9 +57,10 @@ pub async fn resolve_route(
                 .await
                 .unwrap_or_default();
 
-            if let Some(endpoint) = endpoints.into_iter().find(|e| {
-                e.api_type == api_type && e.enabled
-            }) {
+            if let Some(endpoint) = endpoints
+                .into_iter()
+                .find(|e| e.api_type == api_type && e.enabled)
+            {
                 tracing::debug!(endpoint_id = %endpoint.id, url = %endpoint.url, "found suitable endpoint");
                 targets.push(AliasTargetDetail {
                     id: Uuid::now_v7(),

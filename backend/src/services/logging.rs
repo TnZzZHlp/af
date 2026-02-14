@@ -1,7 +1,9 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::request_logs::{self, RequestLog, RequestLogContext, RequestLogFilter, RequestLogSummary};
+use crate::db::request_logs::{
+    self, RequestLog, RequestLogContext, RequestLogFilter, RequestLogSummary,
+};
 
 pub async fn fetch_request_logs(
     pool: &PgPool,

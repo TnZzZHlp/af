@@ -57,7 +57,9 @@ impl LoginProtection {
         record.failures.push(now);
 
         // Remove old failures (> 1 minute)
-        record.failures.retain(|&t| now.duration_since(t) <= Duration::from_secs(60));
+        record
+            .failures
+            .retain(|&t| now.duration_since(t) <= Duration::from_secs(60));
 
         if record.failures.len() > 5 {
             record.banned = true;

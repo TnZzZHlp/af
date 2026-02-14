@@ -68,7 +68,10 @@ struct KeyBuckets {
 
 impl KeyBuckets {
     fn new() -> Self {
-        Self { rps: None, rpm: None }
+        Self {
+            rps: None,
+            rpm: None,
+        }
     }
 
     fn sync_limits(&mut self, rps: Option<i32>, rpm: Option<i32>) {

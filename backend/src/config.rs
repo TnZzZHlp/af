@@ -41,7 +41,8 @@ pub fn load_config() -> anyhow::Result<AppConfig> {
         .transpose()?
         .unwrap_or(10);
 
-    let jwt_secret = env::var("JWT_SECRET").unwrap_or("F0oA/t+6Ia2rs/oWEvCjOUYk67kWKhOISNDzrDP6WHM=".to_string());
+    let jwt_secret = env::var("JWT_SECRET")
+        .unwrap_or("F0oA/t+6Ia2rs/oWEvCjOUYk67kWKhOISNDzrDP6WHM=".to_string());
 
     Ok(AppConfig {
         server: ServerConfig {

@@ -1,6 +1,4 @@
-use crate::services::{
-    auth::LoginProtection, openai::OpenAiService, rate_limit::RateLimiter,
-};
+use crate::services::{auth::LoginProtection, openai::OpenAiService, rate_limit::RateLimiter};
 
 #[derive(Clone)]
 pub struct AppState {

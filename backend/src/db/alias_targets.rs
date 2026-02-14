@@ -237,8 +237,3 @@ pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()
     .await?;
     Ok(())
 }
-
-
-
-
-
