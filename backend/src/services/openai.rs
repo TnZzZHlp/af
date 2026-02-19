@@ -187,7 +187,7 @@ impl OpenAiService {
         tracing::debug!(%request_id, %api_type, "received request");
 
         let payload_object = payload
-            .as_object_mut()
+            .as_object()
             .ok_or_else(|| AppError::BadRequest("payload must be a JSON object".to_string()))?;
         let model = payload_object
             .get("model")
@@ -218,6 +218,12 @@ impl OpenAiService {
             let _ = provider_keys::increment_usage_count(&pool, key_id).await;
         });
 
+        let logged_request_body =
+            serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
+
+        let payload_object = payload
+            .as_object_mut()
+            .ok_or_else(|| AppError::BadRequest("payload must be a JSON object".to_string()))?;
         payload_object.insert("model".to_string(), Value::String(route.model_id.clone()));
         let stream = payload_object
             .get("stream")
@@ -229,7 +235,7 @@ impl OpenAiService {
         let url = route.endpoint_url;
         tracing::debug!(%url, "target endpoint url");
 
-        let request_body =
+        let upstream_request_body =
             serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
 
         tracing::debug!("sending request to upstream provider");
@@ -237,7 +243,7 @@ impl OpenAiService {
             .http_client
             .post(&url)
             .header(header::CONTENT_TYPE, "application/json")
-            .body(request_body.clone());
+            .body(upstream_request_body.clone());
 
         match api_type {
             ApiType::AnthropicMessages => {
@@ -300,7 +306,7 @@ impl OpenAiService {
                     latency_ms: Some(latency_ms),
                     client_ip: client_ip.clone(),
                     user_agent: user_agent.clone(),
-                    request_body: Some(request_body),
+                    request_body: Some(logged_request_body.clone()),
                     response_body: Some(err.to_string().into_bytes()),
                     request_content_type: Some("application/json".to_string()),
                     response_content_type: Some("text/plain".to_string()),
@@ -310,8 +316,8 @@ impl OpenAiService {
                 };
                 let pool = self.pool.clone();
                 tokio::spawn(async move {
-                    if let Err(err) = logging::record_request(&pool, &context).await {
-                        tracing::error!(error = %err, "failed to record request log");
+                    if let Err(log_err) = logging::record_request(&pool, &context).await {
+                        tracing::error!(error = %log_err, "failed to record request log");
                     }
                 });
                 return Err(AppError::Internal(err.into()));
@@ -359,7 +365,7 @@ impl OpenAiService {
                 .map_err(|err| AppError::Internal(err.into()))?;
 
             let pool = self.pool.clone();
-            let request_body = request_body.clone();
+            let request_body = logged_request_body.clone();
             let response_content_type = response_content_type.clone();
             let client_ip = client_ip.clone();
             let user_agent = user_agent.clone();
@@ -427,7 +433,7 @@ impl OpenAiService {
                 latency_ms: Some(elapsed_ms(start)),
                 client_ip,
                 user_agent,
-                request_body: Some(request_body),
+                request_body: Some(logged_request_body),
                 response_body: Some(response_body),
                 request_content_type: Some("application/json".to_string()),
                 response_content_type,
