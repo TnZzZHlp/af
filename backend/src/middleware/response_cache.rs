@@ -10,9 +10,9 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
-    db::{cache_log::CacheLogContext, request_logs::RequestLogContext, types::ApiType},
+    db::{cache_log::CacheLogContext, types::ApiType},
     error::AppError,
-    middleware::{auth::GatewayKeyId, request_log::ClientInfo},
+    middleware::auth::GatewayKeyId,
     services::{
         logging,
         response_cache::{ResponseCacheKey, hash_request_body, request_body_hash_hex},
@@ -57,7 +57,6 @@ pub async fn response_cache_middleware(
         return next.run(req).await;
     }
 
-    let client_info = req.extensions().get::<ClientInfo>().cloned();
     let start = Instant::now();
     let (parts, body) = req.into_parts();
     let request_bytes = match body::to_bytes(body, MAX_CACHEABLE_REQUEST_BODY_BYTES).await {
@@ -86,7 +85,6 @@ pub async fn response_cache_middleware(
                 api_type,
                 request_body,
                 cached: cached.clone(),
-                client_info: client_info.clone(),
                 latency_ms: elapsed_ms(start),
                 cache_layer: CacheLayer::Moka,
             },
@@ -106,7 +104,6 @@ pub async fn response_cache_middleware(
                     api_type,
                     request_body,
                     cached: cached.clone(),
-                    client_info,
                     latency_ms: elapsed_ms(start),
                     cache_layer: CacheLayer::Database,
                 },
@@ -153,7 +150,6 @@ struct CacheHitLogArgs {
     api_type: ApiType,
     request_body: Vec<u8>,
     cached: crate::db::request_logs::CachedResponse,
-    client_info: Option<ClientInfo>,
     latency_ms: i32,
     cache_layer: CacheLayer,
 }
@@ -164,7 +160,6 @@ fn spawn_cache_hit_log(state: &AppState, args: CacheHitLogArgs) {
         api_type,
         request_body,
         cached,
-        client_info,
         latency_ms,
         cache_layer,
     } = args;
@@ -189,30 +184,6 @@ fn spawn_cache_hit_log(state: &AppState, args: CacheHitLogArgs) {
         };
         if let Err(err) = logging::record_cache_event(&pool, &cache_context).await {
             tracing::error!(error = %err, "failed to record cache log");
-        }
-
-        let context = RequestLogContext {
-            request_id,
-            gateway_key_id: Some(gateway_key_id),
-            api_type: Some(api_type),
-            model: cached.model,
-            alias: cached.alias,
-            provider: cached.provider,
-            endpoint: cached.endpoint,
-            status_code: Some(cached.status_code),
-            latency_ms: Some(latency_ms),
-            client_ip: client_info.as_ref().and_then(|info| info.client_ip.clone()),
-            user_agent: client_info.and_then(|info| info.user_agent),
-            request_body: Some(request_body),
-            response_body: Some(cached.response_body),
-            request_content_type: Some("application/json".to_string()),
-            response_content_type: cached.response_content_type,
-            prompt_tokens: cached.prompt_tokens,
-            completion_tokens: cached.completion_tokens,
-            total_tokens: cached.total_tokens,
-        };
-        if let Err(err) = logging::record_request(&pool, &context).await {
-            tracing::error!(error = %err, "failed to record cached request log");
         }
     });
 }

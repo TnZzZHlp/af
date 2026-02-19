@@ -91,13 +91,6 @@ pub struct CachedResponse {
     pub status_code: i32,
     pub response_body: Vec<u8>,
     pub response_content_type: Option<String>,
-    pub model: Option<String>,
-    pub alias: Option<String>,
-    pub provider: Option<String>,
-    pub endpoint: Option<String>,
-    pub prompt_tokens: Option<i32>,
-    pub completion_tokens: Option<i32>,
-    pub total_tokens: Option<i32>,
 }
 
 pub async fn fetch_request_logs(
@@ -323,14 +316,7 @@ pub async fn find_cached_response(
             id as source_request_log_id,
             status_code,
             response_body,
-            response_content_type,
-            model,
-            alias,
-            provider,
-            endpoint,
-            prompt_tokens,
-            completion_tokens,
-            total_tokens
+            response_content_type
         FROM request_logs
         WHERE request_body_hash = $1
           AND status_code BETWEEN 200 AND 299
