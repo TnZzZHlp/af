@@ -1,8 +1,9 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::db::cache_log::{self, CacheLogContext};
 use crate::db::request_logs::{
-    self, RequestLog, RequestLogContext, RequestLogFilter, RequestLogSummary,
+    self, CachedResponse, RequestLog, RequestLogContext, RequestLogFilter, RequestLogSummary,
 };
 
 pub async fn fetch_request_logs(
@@ -50,4 +51,15 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
     };
 
     request_logs::record_request(pool, &db_context).await
+}
+
+pub async fn find_cached_response(
+    pool: &PgPool,
+    request_body_hash: &str,
+) -> anyhow::Result<Option<CachedResponse>> {
+    request_logs::find_cached_response(pool, request_body_hash).await
+}
+
+pub async fn record_cache_event(pool: &PgPool, context: &CacheLogContext) -> anyhow::Result<()> {
+    cache_log::record_cache_event(pool, context).await
 }

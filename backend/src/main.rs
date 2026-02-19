@@ -15,7 +15,10 @@ use tracing_subscriber::EnvFilter;
 
 use crate::{
     config::load_config,
-    services::{auth::LoginProtection, openai::OpenAiService, rate_limit::RateLimiter},
+    services::{
+        auth::LoginProtection, openai::OpenAiService, rate_limit::RateLimiter,
+        response_cache::ResponseCache,
+    },
     state::AppState,
 };
 
@@ -55,12 +58,14 @@ async fn main() -> anyhow::Result<()> {
     let openai = OpenAiService::new(pool.clone(), http_client);
     let rate_limiter = RateLimiter::new();
     let login_protection = LoginProtection::new();
+    let response_cache = ResponseCache::new();
     let state = AppState {
         pool,
         openai,
         jwt_secret: config.jwt_secret,
         rate_limiter,
         login_protection,
+        response_cache,
     };
     let app = router::app(state);
 

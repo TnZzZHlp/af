@@ -1,5 +1,6 @@
 pub mod alias_targets;
 pub mod aliases;
+pub mod cache_log;
 pub mod gateway_key_models;
 pub mod gateway_keys;
 pub mod provider_endpoints;

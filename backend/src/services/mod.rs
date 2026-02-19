@@ -5,6 +5,7 @@ pub mod logging;
 pub mod openai;
 pub mod providers;
 pub mod rate_limit;
+pub mod response_cache;
 pub mod routing;
 pub mod stats;
 pub mod users;

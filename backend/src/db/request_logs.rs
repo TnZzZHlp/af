@@ -84,6 +84,21 @@ pub struct RequestLogContext {
     pub total_tokens: Option<i32>,
 }
 
+#[derive(Clone, Debug, sqlx::FromRow)]
+pub struct CachedResponse {
+    pub source_request_log_id: i64,
+    pub status_code: i32,
+    pub response_body: Vec<u8>,
+    pub response_content_type: Option<String>,
+    pub model: Option<String>,
+    pub alias: Option<String>,
+    pub provider: Option<String>,
+    pub endpoint: Option<String>,
+    pub prompt_tokens: Option<i32>,
+    pub completion_tokens: Option<i32>,
+    pub total_tokens: Option<i32>,
+}
+
 pub async fn fetch_request_logs(
     pool: &PgPool,
     filter: &RequestLogFilter,
@@ -292,4 +307,37 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
     .await?;
 
     Ok(())
+}
+
+pub async fn find_cached_response(
+    pool: &PgPool,
+    request_body_hash: &str,
+) -> anyhow::Result<Option<CachedResponse>> {
+    let cached = sqlx::query_as::<_, CachedResponse>(
+        r#"
+        SELECT
+            id as source_request_log_id,
+            status_code,
+            response_body,
+            response_content_type,
+            model,
+            alias,
+            provider,
+            endpoint,
+            prompt_tokens,
+            completion_tokens,
+            total_tokens
+        FROM request_logs
+        WHERE request_body_hash = $1
+          AND status_code BETWEEN 200 AND 299
+          AND response_body IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(request_body_hash)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(cached)
 }

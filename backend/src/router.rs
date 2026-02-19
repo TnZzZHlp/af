@@ -120,6 +120,10 @@ pub fn app(state: AppState) -> Router {
         .route("/v1/messages", post(handlers::openai::anthropic_messages))
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
+            middleware::response_cache::response_cache_middleware,
+        ))
+        .layer(axum_middleware::from_fn_with_state(
+            state.clone(),
             middleware::rate_limit::rate_limit_middleware,
         ))
         .layer(axum_middleware::from_fn_with_state(

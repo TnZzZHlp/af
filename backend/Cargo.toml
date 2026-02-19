@@ -31,3 +31,5 @@ uuid = { version = "1.21.0", features = ["v7", "serde"] }
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 tower-http = { version = "0.6.8", features = ["trace"] }
 rand = "0.10.0"
+moka = { version = "0.12.11", features = ["sync"] }
+md5 = "0.8.0"
