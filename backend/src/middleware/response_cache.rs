@@ -42,15 +42,18 @@ pub async fn response_cache_middleware(
     req: Request<Body>,
     next: Next,
 ) -> impl IntoResponse {
+    tracing::debug!("entering response cache middleware, checking for cacheable request");
     let Some(api_type) = api_type_from_path(req.uri().path()) else {
         return next.run(req).await;
     };
 
     let Some(gateway_key_id) = req.extensions().get::<GatewayKeyId>().copied() else {
+        tracing::debug!("no gateway key id found in request extensions, skipping response cache");
         return next.run(req).await;
     };
 
     if !is_json_content_type(req.headers().get(header::CONTENT_TYPE)) {
+        tracing::debug!("request content type is not JSON, skipping response cache");
         return next.run(req).await;
     }
 
@@ -66,6 +69,7 @@ pub async fn response_cache_middleware(
     };
 
     if request_bytes.is_empty() {
+        tracing::debug!("request body is empty, skipping response cache");
         let req = Request::from_parts(parts, Body::from(request_bytes));
         return next.run(req).await;
     }
@@ -110,6 +114,7 @@ pub async fn response_cache_middleware(
             build_cached_response(cached)
         }
         Ok(None) => {
+            tracing::debug!(gateway_key_id = %gateway_key_id.0, %api_type, "response cache miss");
             let req = Request::from_parts(parts, Body::from(request_bytes));
             next.run(req).await
         }
