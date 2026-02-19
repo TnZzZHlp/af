@@ -3,6 +3,7 @@ use sqlx::{PgPool, QueryBuilder};
 use uuid::Uuid;
 
 use super::types::ApiType;
+use crate::utils::request_body_hash::hash_request_body_hex;
 
 #[derive(Debug, Default)]
 pub struct RequestLogFilter {
@@ -253,13 +254,14 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
     let Some(api_type) = context.api_type else {
         return Ok(());
     };
+    let request_body_hash = context.request_body.as_deref().map(hash_request_body_hex);
 
     let client_ip = context
         .client_ip
         .as_deref()
         .and_then(|value| value.parse::<sqlx::types::ipnetwork::IpNetwork>().ok());
 
-    sqlx::query!(
+    sqlx::query(
         "INSERT INTO request_logs (
             request_id,
             gateway_key_id,
@@ -273,36 +275,38 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
             client_ip,
             user_agent,
             request_body,
+            request_body_hash,
             response_body,
             request_content_type,
             response_content_type,
             prompt_tokens,
             completion_tokens,
             total_tokens
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7,
-                $8, $9, $10::inet, $11, $12, $13,
-                $14, $15, $16, $17, $18
-            )",
-        context.request_id,
-        context.gateway_key_id,
-        api_type as _,
-        context.model.as_deref(),
-        context.alias.as_deref(),
-        context.provider.as_deref(),
-        context.endpoint.as_deref(),
-        context.status_code,
-        context.latency_ms,
-        client_ip,
-        context.user_agent.as_deref(),
-        context.request_body.as_deref(),
-        context.response_body.as_deref(),
-        context.request_content_type.as_deref(),
-        context.response_content_type.as_deref(),
-        context.prompt_tokens,
-        context.completion_tokens,
-        context.total_tokens
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7,
+            $8, $9, $10::inet, $11, $12, $13,
+            $14, $15, $16, $17, $18, $19
+        )",
     )
+    .bind(context.request_id)
+    .bind(context.gateway_key_id)
+    .bind(api_type)
+    .bind(context.model.as_deref())
+    .bind(context.alias.as_deref())
+    .bind(context.provider.as_deref())
+    .bind(context.endpoint.as_deref())
+    .bind(context.status_code)
+    .bind(context.latency_ms)
+    .bind(client_ip)
+    .bind(context.user_agent.as_deref())
+    .bind(context.request_body.as_deref())
+    .bind(request_body_hash.as_deref())
+    .bind(context.response_body.as_deref())
+    .bind(context.request_content_type.as_deref())
+    .bind(context.response_content_type.as_deref())
+    .bind(context.prompt_tokens)
+    .bind(context.completion_tokens)
+    .bind(context.total_tokens)
     .execute(pool)
     .await?;
 
