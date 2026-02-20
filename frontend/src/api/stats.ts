@@ -13,6 +13,9 @@ export interface CategoryCount {
 export interface DashboardStats {
   requests_over_time: TimeSeriesPoint[];
   requests_by_provider: CategoryCount[];
+  cache_hit_requests: number;
+  cache_total_requests: number;
+  cache_hit_rate: number;
 }
 
 export interface StatsQuery {

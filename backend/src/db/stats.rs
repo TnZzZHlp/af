@@ -15,6 +15,13 @@ pub struct CategoryCount {
     pub count: i64,
 }
 
+#[derive(sqlx::FromRow)]
+pub struct CacheHitRateStats {
+    pub cache_hit_requests: i64,
+    pub cache_total_requests: i64,
+    pub cache_hit_rate: f64,
+}
+
 pub async fn requests_over_time(
     pool: &PgPool,
     start: OffsetDateTime,
@@ -65,4 +72,40 @@ pub async fn requests_by_provider(
     .await?;
 
     Ok(rows)
+}
+
+pub async fn cache_hit_rate(
+    pool: &PgPool,
+    start: OffsetDateTime,
+    end: OffsetDateTime,
+) -> anyhow::Result<CacheHitRateStats> {
+    let stats = sqlx::query_as::<_, CacheHitRateStats>(
+        r#"
+        WITH request_count AS (
+            SELECT count(*)::bigint AS total
+            FROM request_logs
+            WHERE created_at >= $1 AND created_at <= $2
+        ),
+        cache_hit_count AS (
+            SELECT count(*)::bigint AS total
+            FROM cache_log
+            WHERE created_at >= $1 AND created_at <= $2
+        )
+        SELECT
+            chc.total AS cache_hit_requests,
+            (rc.total + chc.total) AS cache_total_requests,
+            CASE
+                WHEN (rc.total + chc.total) = 0 THEN 0::double precision
+                ELSE chc.total::double precision / (rc.total + chc.total)::double precision
+            END AS cache_hit_rate
+        FROM request_count rc
+        CROSS JOIN cache_hit_count chc
+        "#,
+    )
+    .bind(start)
+    .bind(end)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(stats)
 }

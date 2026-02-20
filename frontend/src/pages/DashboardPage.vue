@@ -57,6 +57,19 @@ const totalRequests = computed(() => {
   return requestsData.value.reduce((acc, curr) => acc + curr.requests, 0).toLocaleString()
 })
 
+const cacheHitRate = computed(() => {
+  if (!statsStore.stats) return "0.00%"
+  return `${(statsStore.stats.cache_hit_rate * 100).toFixed(2)}%`
+})
+
+const cacheHitRequests = computed(() => {
+  return statsStore.stats ? statsStore.stats.cache_hit_requests.toLocaleString() : "0"
+})
+
+const cacheTotalRequests = computed(() => {
+  return statsStore.stats ? statsStore.stats.cache_total_requests.toLocaleString() : "0"
+})
+
 const requestsChartConfig = {
   requests: {
     label: "Requests",
@@ -151,6 +164,28 @@ function xTickFormat(d: number) {
               })" />
             </VisXYContainer>
           </ChartContainer>
+        </CardContent>
+      </Card>
+
+      <Card class="col-span-3">
+        <CardHeader>
+          <CardTitle>Cache Hit Rate</CardTitle>
+          <CardDescription>
+            Cache performance for the selected period
+          </CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="text-4xl font-bold leading-none">{{ cacheHitRate }}</div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div class="space-y-1">
+              <p class="text-muted-foreground">Cache Hits</p>
+              <p class="font-semibold">{{ cacheHitRequests }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="text-muted-foreground">Total Requests</p>
+              <p class="font-semibold">{{ cacheTotalRequests }}</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
