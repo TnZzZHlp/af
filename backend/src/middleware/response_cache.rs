@@ -12,10 +12,10 @@ use uuid::Uuid;
 use crate::{
     db::{cache_log::CacheLogContext, types::ApiType},
     error::AppError,
-    middleware::auth::GatewayKeyId,
+    middleware::{auth::GatewayKeyId, request_log::ClientInfo},
     services::{
         logging,
-        response_cache::{ResponseCacheKey, hash_request_body, request_body_hash_hex},
+        response_cache::{ResponseCacheKey, request_body_hash_hex},
     },
     state::AppState,
 };
@@ -52,6 +52,8 @@ pub async fn response_cache_middleware(
         return next.run(req).await;
     };
 
+    let client_info = req.extensions().get::<ClientInfo>().cloned();
+
     if !is_json_content_type(req.headers().get(header::CONTENT_TYPE)) {
         tracing::debug!("request content type is not JSON, skipping response cache");
         return next.run(req).await;
@@ -82,11 +84,10 @@ pub async fn response_cache_middleware(
             &state,
             CacheHitLogArgs {
                 gateway_key_id: gateway_key_id.0,
-                api_type,
-                request_body,
                 cached: cached.clone(),
                 latency_ms: elapsed_ms(start),
                 cache_layer: CacheLayer::Moka,
+                client_info: client_info.clone(),
             },
         );
         return build_cached_response(cached);
@@ -101,11 +102,10 @@ pub async fn response_cache_middleware(
                 &state,
                 CacheHitLogArgs {
                     gateway_key_id: gateway_key_id.0,
-                    api_type,
-                    request_body,
                     cached: cached.clone(),
                     latency_ms: elapsed_ms(start),
                     cache_layer: CacheLayer::Database,
+                    client_info,
                 },
             );
             build_cached_response(cached)
@@ -147,40 +147,32 @@ fn build_cached_response(cached: crate::db::request_logs::CachedResponse) -> Res
 
 struct CacheHitLogArgs {
     gateway_key_id: Uuid,
-    api_type: ApiType,
-    request_body: Vec<u8>,
     cached: crate::db::request_logs::CachedResponse,
     latency_ms: i32,
     cache_layer: CacheLayer,
+    client_info: Option<ClientInfo>,
 }
 
 fn spawn_cache_hit_log(state: &AppState, args: CacheHitLogArgs) {
     let CacheHitLogArgs {
         gateway_key_id,
-        api_type,
-        request_body,
         cached,
         latency_ms,
         cache_layer,
+        client_info,
     } = args;
     let pool = state.pool.clone();
     tokio::spawn(async move {
         let request_id = Uuid::now_v7();
-        let request_body_hash = request_body_hash_hex(hash_request_body(&request_body));
-        let request_body_size = i32::try_from(request_body.len()).unwrap_or(i32::MAX);
-        let response_body_size = i32::try_from(cached.response_body.len()).unwrap_or(i32::MAX);
 
         let cache_context = CacheLogContext {
             request_id,
             source_request_log_id: Some(cached.source_request_log_id),
             gateway_key_id: Some(gateway_key_id),
-            api_type,
             cache_layer: cache_layer.as_str(),
-            hit: true,
-            request_body_hash: Some(request_body_hash),
-            request_body_size: Some(request_body_size),
-            response_body_size: Some(response_body_size),
             latency_ms: Some(latency_ms),
+            client_ip: client_info.as_ref().and_then(|i| i.client_ip.clone()),
+            user_agent: client_info.as_ref().and_then(|i| i.user_agent.clone()),
         };
         if let Err(err) = logging::record_cache_event(&pool, &cache_context).await {
             tracing::error!(error = %err, "failed to record cache log");
