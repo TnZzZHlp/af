@@ -85,6 +85,10 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleString();
 }
 
+function formatLatency(latencyMs: number | null) {
+  return latencyMs != null ? `${latencyMs}ms` : "-";
+}
+
 function formatCacheLayer(cacheLayer: string | null) {
   return cacheLayer ?? "miss";
 }
@@ -225,7 +229,7 @@ function nextPage() {
               </Badge>
             </TableCell>
             <TableCell>
-              {{ log.latency_ms ? `${log.latency_ms}ms` : '-' }}
+              {{ formatLatency(log.latency_ms) }}
             </TableCell>
             <TableCell>
               <Badge variant="secondary" class="h-5 text-[10px] px-1.5">
@@ -286,7 +290,7 @@ function nextPage() {
                 <div>
                   <span class="font-semibold block text-muted-foreground">Latency</span>
                   <div class="flex items-center gap-2">
-                    <span>{{ store.currentLog.latency_ms ? `${store.currentLog.latency_ms}ms` : '-' }}</span>
+                    <span>{{ formatLatency(store.currentLog.latency_ms) }}</span>
                     <Badge variant="secondary" class="h-5 text-[10px] px-1.5">
                       {{ formatCacheLayer(store.currentLog.cache_layer) }}
                     </Badge>
