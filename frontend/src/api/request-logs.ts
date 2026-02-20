@@ -19,6 +19,7 @@ export interface RequestLogSummary {
   completion_tokens: number | null;
   total_tokens: number | null;
   created_at: string;
+  cache_layer: string | null;
 }
 
 export interface RequestLog {
@@ -41,6 +42,7 @@ export interface RequestLog {
   completion_tokens: number | null;
   total_tokens: number | null;
   created_at: string;
+  cache_layer: string | null;
 }
 
 export interface RequestLogFilter {

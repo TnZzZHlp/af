@@ -219,7 +219,12 @@ function nextPage() {
                 {{ log.status_code || '-' }}
               </Badge>
             </TableCell>
-            <TableCell>{{ log.latency_ms ? `${log.latency_ms}ms` : '-' }}</TableCell>
+            <TableCell>
+              {{ log.latency_ms ? `${log.latency_ms}ms` : '-' }}
+              <Badge v-if="log.cache_layer" variant="secondary" class="ml-2 h-5 text-[10px] px-1.5">
+                {{ log.cache_layer }}
+              </Badge>
+            </TableCell>
             <TableCell>{{ log.client_ip || '-' }}</TableCell>
             <TableCell>{{ log.model || '-' }}</TableCell>
             <TableCell class="text-right">
@@ -273,7 +278,12 @@ function nextPage() {
                 </div>
                 <div>
                   <span class="font-semibold block text-muted-foreground">Latency</span>
-                  <span>{{ store.currentLog.latency_ms ? `${store.currentLog.latency_ms}ms` : '-' }}</span>
+                  <div class="flex items-center gap-2">
+                    <span>{{ store.currentLog.latency_ms ? `${store.currentLog.latency_ms}ms` : '-' }}</span>
+                    <Badge v-if="store.currentLog.cache_layer" variant="secondary" class="h-5 text-[10px] px-1.5">
+                      {{ store.currentLog.cache_layer }}
+                    </Badge>
+                  </div>
                 </div>
                 <div>
                   <span class="font-semibold block text-muted-foreground">Client IP</span>

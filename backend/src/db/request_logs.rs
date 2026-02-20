@@ -39,6 +39,7 @@ pub struct RequestLog {
     pub total_tokens: Option<i32>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,
+    pub cache_layer: Option<String>,
 }
 
 #[derive(Debug, sqlx::FromRow, Serialize)]
@@ -62,6 +63,7 @@ pub struct RequestLogSummary {
     pub total_tokens: Option<i32>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,
+    pub cache_layer: Option<String>,
 }
 
 pub struct RequestLogContext {
@@ -93,11 +95,51 @@ pub struct CachedResponse {
     pub response_content_type: Option<String>,
 }
 
+fn append_filters<'a>(
+    builder: &mut QueryBuilder<'a, sqlx::Postgres>,
+    filter: &'a RequestLogFilter,
+    rl_alias: &str,
+    main_alias: &str,
+) {
+    if let Some(model) = &filter.model {
+        builder.push(format!(" AND {}.model ILIKE ", rl_alias));
+        builder.push_bind(format!("%{}%", model));
+    }
+
+    if let Some(alias) = &filter.alias {
+        builder.push(format!(" AND {}.alias ILIKE ", rl_alias));
+        builder.push_bind(format!("%{}%", alias));
+    }
+
+    if let Some(provider) = &filter.provider {
+        builder.push(format!(" AND {}.provider ILIKE ", rl_alias));
+        builder.push_bind(format!("%{}%", provider));
+    }
+
+    if let Some(status_code) = filter.status_code {
+        builder.push(format!(" AND {}.status_code = ", rl_alias));
+        builder.push_bind(status_code);
+    }
+
+    if let Some(client_ip) = &filter.client_ip {
+        builder.push(format!(" AND {}.client_ip::text ILIKE ", main_alias));
+        builder.push_bind(format!("%{}%", client_ip));
+    }
+
+    if let Some(request_id) = filter.request_id {
+        builder.push(format!(" AND {}.request_id = ", main_alias));
+        builder.push_bind(request_id);
+    }
+}
+
 pub async fn fetch_request_logs(
     pool: &PgPool,
     filter: &RequestLogFilter,
 ) -> anyhow::Result<Vec<RequestLogSummary>> {
-    let mut builder = QueryBuilder::new(
+    let mut builder = QueryBuilder::new("SELECT * FROM (");
+
+    // Part 1: request_logs
+    builder.push(
         r#"
         SELECT 
             request_id,
@@ -116,38 +158,46 @@ pub async fn fetch_request_logs(
             prompt_tokens,
             completion_tokens,
             total_tokens,
-            created_at
+            created_at,
+            NULL::text as cache_layer
         FROM request_logs
         WHERE 1=1
         "#,
     );
+    append_filters(&mut builder, filter, "request_logs", "request_logs");
 
-    if let Some(model) = &filter.model {
-        builder.push(" AND model ILIKE ");
-        builder.push_bind(format!("%{}%", model));
-    }
+    builder.push(" UNION ALL ");
 
-    if let Some(alias) = &filter.alias {
-        builder.push(" AND alias ILIKE ");
-        builder.push_bind(format!("%{}%", alias));
-    }
+    // Part 2: cache_log
+    builder.push(
+        r#"
+        SELECT
+            cl.request_id,
+            cl.gateway_key_id,
+            rl.api_type,
+            rl.model,
+            rl.alias,
+            rl.provider,
+            rl.endpoint,
+            rl.status_code,
+            cl.latency_ms,
+            cl.client_ip::text as client_ip,
+            cl.user_agent,
+            rl.request_content_type,
+            rl.response_content_type,
+            rl.prompt_tokens,
+            rl.completion_tokens,
+            rl.total_tokens,
+            cl.created_at,
+            cl.cache_layer
+        FROM cache_log cl
+        JOIN request_logs rl ON cl.source_request_log_id = rl.id
+        WHERE 1=1
+        "#,
+    );
+    append_filters(&mut builder, filter, "rl", "cl");
 
-    if let Some(provider) = &filter.provider {
-        builder.push(" AND provider ILIKE ");
-        builder.push_bind(format!("%{}%", provider));
-    }
-
-    if let Some(status_code) = filter.status_code {
-        builder.push(" AND status_code = ");
-        builder.push_bind(status_code);
-    }
-
-    if let Some(client_ip) = &filter.client_ip {
-        builder.push(" AND client_ip::text ILIKE ");
-        builder.push_bind(format!("%{}%", client_ip));
-    }
-
-    builder.push(" ORDER BY created_at DESC");
+    builder.push(") as combined ORDER BY created_at DESC");
 
     if let Some(limit) = filter.limit {
         builder.push(" LIMIT ");
@@ -168,37 +218,32 @@ pub async fn fetch_request_logs(
 }
 
 pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> anyhow::Result<i64> {
-    let mut builder = QueryBuilder::new("SELECT count(*) FROM request_logs WHERE 1=1");
+    let mut builder = QueryBuilder::new("SELECT count(*) FROM (");
 
-    if let Some(request_id) = filter.request_id {
-        builder.push(" AND request_id = ");
-        builder.push_bind(request_id);
-    }
+    // Part 1: request_logs
+    builder.push(
+        r#"
+        SELECT request_id
+        FROM request_logs
+        WHERE 1=1
+        "#,
+    );
+    append_filters(&mut builder, filter, "request_logs", "request_logs");
 
-    if let Some(model) = &filter.model {
-        builder.push(" AND model ILIKE ");
-        builder.push_bind(format!("%{}%", model));
-    }
+    builder.push(" UNION ALL ");
 
-    if let Some(alias) = &filter.alias {
-        builder.push(" AND alias ILIKE ");
-        builder.push_bind(format!("%{}%", alias));
-    }
+    // Part 2: cache_log
+    builder.push(
+        r#"
+        SELECT cl.request_id
+        FROM cache_log cl
+        JOIN request_logs rl ON cl.source_request_log_id = rl.id
+        WHERE 1=1
+        "#,
+    );
+    append_filters(&mut builder, filter, "rl", "cl");
 
-    if let Some(provider) = &filter.provider {
-        builder.push(" AND provider ILIKE ");
-        builder.push_bind(format!("%{}%", provider));
-    }
-
-    if let Some(status_code) = filter.status_code {
-        builder.push(" AND status_code = ");
-        builder.push_bind(status_code);
-    }
-
-    if let Some(client_ip) = &filter.client_ip {
-        builder.push(" AND client_ip::text ILIKE ");
-        builder.push_bind(format!("%{}%", client_ip));
-    }
+    builder.push(") as combined");
 
     let count: i64 = builder.build_query_scalar::<i64>().fetch_one(pool).await?;
 
@@ -209,13 +254,12 @@ pub async fn fetch_request_log_detail(
     pool: &PgPool,
     request_id: Uuid,
 ) -> anyhow::Result<Option<RequestLog>> {
-    let log = sqlx::query_as!(
-        RequestLog,
+    let log = sqlx::query_as::<_, RequestLog>(
         r#"
         SELECT 
             request_id,
             gateway_key_id,
-            api_type as "api_type: ApiType",
+            api_type,
             model,
             alias,
             provider,
@@ -231,12 +275,38 @@ pub async fn fetch_request_log_detail(
             prompt_tokens,
             completion_tokens,
             total_tokens,
-            created_at
+            created_at,
+            NULL::text as cache_layer
         FROM request_logs
         WHERE request_id = $1
+        UNION ALL
+        SELECT
+            cl.request_id,
+            cl.gateway_key_id,
+            rl.api_type,
+            rl.model,
+            rl.alias,
+            rl.provider,
+            rl.endpoint,
+            rl.status_code,
+            cl.latency_ms,
+            cl.client_ip::text as client_ip,
+            cl.user_agent,
+            rl.request_body,
+            rl.response_body,
+            rl.request_content_type,
+            rl.response_content_type,
+            rl.prompt_tokens,
+            rl.completion_tokens,
+            rl.total_tokens,
+            cl.created_at,
+            cl.cache_layer
+        FROM cache_log cl
+        JOIN request_logs rl ON cl.source_request_log_id = rl.id
+        WHERE cl.request_id = $1
         "#,
-        request_id
     )
+    .bind(request_id)
     .fetch_optional(pool)
     .await?;
 
