@@ -85,6 +85,10 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleString();
 }
 
+function formatCacheLayer(cacheLayer: string | null) {
+  return cacheLayer ?? "miss";
+}
+
 function handleCopy(text: string, section: string) {
   copy(text);
   copiedSection.value = section;
@@ -184,6 +188,7 @@ function nextPage() {
             <TableHead>Provider</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Latency</TableHead>
+            <TableHead>Cache layer</TableHead>
             <TableHead>Client IP</TableHead>
             <TableHead>Model</TableHead>
             <TableHead class="text-right">Actions</TableHead>
@@ -191,12 +196,12 @@ function nextPage() {
         </TableHeader>
         <TableBody>
           <TableRow v-if="store.isLoading && store.requestLogs.length === 0">
-            <TableCell colspan="7" class="h-24 text-center">
+            <TableCell colspan="9" class="h-24 text-center">
               <Loader2 class="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
             </TableCell>
           </TableRow>
           <TableRow v-else-if="store.requestLogs.length === 0">
-            <TableCell colspan="7" class="h-24 text-center text-muted-foreground">
+            <TableCell colspan="9" class="h-24 text-center text-muted-foreground">
               No logs found.
             </TableCell>
           </TableRow>
@@ -221,8 +226,10 @@ function nextPage() {
             </TableCell>
             <TableCell>
               {{ log.latency_ms ? `${log.latency_ms}ms` : '-' }}
-              <Badge v-if="log.cache_layer" variant="secondary" class="ml-2 h-5 text-[10px] px-1.5">
-                {{ log.cache_layer }}
+            </TableCell>
+            <TableCell>
+              <Badge variant="secondary" class="h-5 text-[10px] px-1.5">
+                {{ formatCacheLayer(log.cache_layer) }}
               </Badge>
             </TableCell>
             <TableCell>{{ log.client_ip || '-' }}</TableCell>
@@ -280,8 +287,8 @@ function nextPage() {
                   <span class="font-semibold block text-muted-foreground">Latency</span>
                   <div class="flex items-center gap-2">
                     <span>{{ store.currentLog.latency_ms ? `${store.currentLog.latency_ms}ms` : '-' }}</span>
-                    <Badge v-if="store.currentLog.cache_layer" variant="secondary" class="h-5 text-[10px] px-1.5">
-                      {{ store.currentLog.cache_layer }}
+                    <Badge variant="secondary" class="h-5 text-[10px] px-1.5">
+                      {{ formatCacheLayer(store.currentLog.cache_layer) }}
                     </Badge>
                   </div>
                 </div>
