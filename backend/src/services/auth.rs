@@ -1,13 +1,12 @@
 use axum::http::{HeaderMap, header};
+use dashmap::DashMap;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::{
-    collections::HashMap,
     sync::Arc,
     time::{Duration, Instant},
 };
-use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::db::{
@@ -23,28 +22,25 @@ struct IpRecord {
 
 #[derive(Debug, Clone, Default)]
 pub struct LoginProtection {
-    records: Arc<RwLock<HashMap<String, IpRecord>>>,
+    records: Arc<DashMap<String, IpRecord>>,
 }
 
 impl LoginProtection {
     pub fn new() -> Self {
         Self {
-            records: Arc::new(RwLock::new(HashMap::new())),
+            records: Arc::new(DashMap::new()),
         }
     }
 
     pub async fn is_banned(&self, ip: &str) -> bool {
-        let guard = self.records.read().await;
-        if let Some(record) = guard.get(ip) {
-            record.banned
-        } else {
-            false
-        }
+        self.records
+            .get(ip)
+            .map(|record| record.banned)
+            .unwrap_or(false)
     }
 
     pub async fn record_failure(&self, ip: &str) {
-        let mut guard = self.records.write().await;
-        let record = guard.entry(ip.to_string()).or_insert(IpRecord {
+        let mut record = self.records.entry(ip.to_string()).or_insert(IpRecord {
             failures: Vec::new(),
             banned: false,
         });

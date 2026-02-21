@@ -1,7 +1,7 @@
-use std::{collections::HashMap, time::Instant};
+use std::{sync::Arc, time::Instant};
 
+use dashmap::DashMap;
 use sqlx::PgPool;
-use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::db::gateway_keys;
@@ -121,13 +121,13 @@ impl KeyBuckets {
 
 #[derive(Debug, Clone, Default)]
 pub struct RateLimiter {
-    buckets: std::sync::Arc<Mutex<HashMap<Uuid, KeyBuckets>>>,
+    buckets: Arc<DashMap<Uuid, KeyBuckets>>,
 }
 
 impl RateLimiter {
     pub fn new() -> Self {
         Self {
-            buckets: std::sync::Arc::new(Mutex::new(HashMap::new())),
+            buckets: Arc::new(DashMap::new()),
         }
     }
 
@@ -141,8 +141,10 @@ impl RateLimiter {
             return true;
         }
 
-        let mut guard = self.buckets.lock().await;
-        let entry = guard.entry(gateway_key_id).or_insert_with(KeyBuckets::new);
+        let mut entry = self
+            .buckets
+            .entry(gateway_key_id)
+            .or_insert_with(KeyBuckets::new);
         entry.sync_limits(rps, rpm);
         entry.allow_and_consume(Instant::now())
     }
