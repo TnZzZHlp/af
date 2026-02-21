@@ -6,7 +6,7 @@ use crate::db::alias_targets::{self, AliasTargetDetail};
 use crate::db::provider_keys::{self, ProviderKey};
 use crate::db::types::ApiType;
 use crate::error::AppError;
-use crate::services::{auth, providers};
+use crate::services::providers;
 
 #[derive(Debug, Clone)]
 pub struct Route {
@@ -18,16 +18,8 @@ pub struct Route {
     pub alias_name: String,
 }
 
-pub async fn resolve_route(
-    pool: &PgPool,
-    gateway_key_id: Uuid,
-    model: &str,
-    api_type: ApiType,
-) -> anyhow::Result<Route> {
-    // 1. Check whitelist
-    enforce_model_whitelist(pool, gateway_key_id, model).await?;
-
-    // 2. Resolve target
+pub async fn resolve_route(pool: &PgPool, model: &str, api_type: ApiType) -> anyhow::Result<Route> {
+    // Resolve target
     tracing::debug!("resolving target");
     let mut targets = Vec::new();
     let mut is_alias_match = false;
@@ -121,26 +113,6 @@ pub async fn resolve_route(
         provider_key,
         alias_name: model.to_string(),
     })
-}
-
-async fn enforce_model_whitelist(
-    pool: &PgPool,
-    gateway_key_id: Uuid,
-    model: &str,
-) -> anyhow::Result<()> {
-    let whitelist = auth::fetch_model_whitelist(pool, gateway_key_id).await?;
-    if whitelist.is_empty() {
-        tracing::debug!("whitelist is empty, skipping check");
-        return Ok(());
-    }
-
-    tracing::debug!(?whitelist, %model, "checking model whitelist");
-    if whitelist.iter().any(|entry| entry == model) {
-        return Ok(());
-    }
-
-    tracing::debug!("model not in whitelist");
-    Err(AppError::Forbidden("model not in whitelist".to_string()).into())
 }
 
 fn parse_provider_real_model(model: &str) -> Option<(&str, &str)> {

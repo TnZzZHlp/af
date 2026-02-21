@@ -1,13 +1,17 @@
 use axum::{
+    body::{self, Body},
     extract::{ConnectInfo, State},
-    http::Request,
+    http::{Request, header},
     middleware::Next,
     response::IntoResponse,
 };
+use serde_json::Value;
 use std::net::SocketAddr;
 
 use crate::{error::AppError, services::auth, state::AppState};
 use uuid::Uuid;
+
+const MAX_WHITELIST_CHECK_BODY_BYTES: usize = 100 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug)]
 pub struct GatewayKeyId(pub Uuid);
@@ -45,6 +49,34 @@ pub async fn auth_middleware(
     let mut req = req;
     req.extensions_mut().insert(GatewayKeyId(gateway_key.id));
 
+    let whitelist = match auth::fetch_model_whitelist(&state.pool, gateway_key.id).await {
+        Ok(models) => models,
+        Err(err) => return AppError::Internal(err).into_response(),
+    };
+    if whitelist.is_empty() {
+        return next.run(req).await;
+    }
+
+    let (parts, body) = req.into_parts();
+    let body_bytes = match body::to_bytes(body, MAX_WHITELIST_CHECK_BODY_BYTES).await {
+        Ok(bytes) => bytes,
+        Err(_) => return AppError::BadRequest("invalid request body".to_string()).into_response(),
+    };
+
+    let model = match extract_model_for_whitelist_check(
+        parts.uri.path(),
+        parts.headers.get(header::CONTENT_TYPE),
+        &body_bytes,
+    ) {
+        Ok(model) => model,
+        Err(err) => return err.into_response(),
+    };
+
+    if whitelist.iter().all(|entry| entry != &model) {
+        return AppError::Forbidden("model not in whitelist".to_string()).into_response();
+    }
+
+    let req = Request::from_parts(parts, Body::from(body_bytes));
     next.run(req).await
 }
 
@@ -58,4 +90,39 @@ impl axum::extract::FromRequestParts<AppState> for GatewayKeyId {
         let id = parts.extensions.get::<GatewayKeyId>().copied();
         async move { id.ok_or(AppError::Unauthorized) }
     }
+}
+
+fn extract_model_for_whitelist_check(
+    path: &str,
+    content_type: Option<&header::HeaderValue>,
+    body_bytes: &[u8],
+) -> Result<String, AppError> {
+    if !matches!(
+        path,
+        "/v1/chat/completions" | "/v1/responses" | "/v1/messages"
+    ) {
+        return Err(AppError::BadRequest("unsupported API path".to_string()));
+    }
+
+    let is_json = content_type
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.starts_with("application/json"))
+        .unwrap_or(false);
+    if !is_json {
+        return Err(AppError::BadRequest(
+            "content-type must be application/json".to_string(),
+        ));
+    }
+
+    let payload: Value = serde_json::from_slice(body_bytes)
+        .map_err(|_| AppError::BadRequest("invalid request body".to_string()))?;
+    let payload_object = payload
+        .as_object()
+        .ok_or_else(|| AppError::BadRequest("payload must be a JSON object".to_string()))?;
+    let model = payload_object
+        .get("model")
+        .and_then(Value::as_str)
+        .ok_or_else(|| AppError::BadRequest("model is required".to_string()))?;
+
+    Ok(model.to_string())
 }
