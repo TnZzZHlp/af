@@ -14,6 +14,7 @@ pub struct AppConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    pub graceful_shutdown_timeout_secs: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -28,6 +29,15 @@ pub fn load_config() -> anyhow::Result<AppConfig> {
         .unwrap_or("30002".to_string())
         .parse::<u16>()
         .map_err(|err| anyhow!("SERVER_PORT must be a u16: {err}"))?;
+    let graceful_shutdown_timeout_secs = env::var("SERVER_SHUTDOWN_TIMEOUT_SECS")
+        .ok()
+        .map(|value| {
+            value
+                .parse::<u64>()
+                .map_err(|err| anyhow!("SERVER_SHUTDOWN_TIMEOUT_SECS must be a u64: {err}"))
+        })
+        .transpose()?
+        .unwrap_or(30);
 
     let database_url = env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgres://postgres@192.168.255.201:5432/af".to_string());
@@ -48,6 +58,7 @@ pub fn load_config() -> anyhow::Result<AppConfig> {
         server: ServerConfig {
             host: server_host,
             port: server_port,
+            graceful_shutdown_timeout_secs,
         },
         database: DatabaseConfig {
             url: database_url,

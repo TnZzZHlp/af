@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     db::types::ApiType,
     error::{AppError, AppResult},
-    services::providers,
+    services::{background::BackgroundTasks, providers},
 };
 
 #[derive(Debug, Deserialize)]
@@ -37,11 +37,16 @@ pub struct Model {
 pub struct OpenAiService {
     pool: PgPool,
     http_client: Client,
+    background_tasks: BackgroundTasks,
 }
 
 impl OpenAiService {
-    pub fn new(pool: PgPool, http_client: Client) -> Self {
-        Self { pool, http_client }
+    pub fn new(pool: PgPool, http_client: Client, background_tasks: BackgroundTasks) -> Self {
+        Self {
+            pool,
+            http_client,
+            background_tasks,
+        }
     }
 
     pub async fn list_models(&self, provider_id: Uuid) -> AppResult<Vec<Model>> {

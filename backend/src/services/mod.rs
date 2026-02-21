@@ -1,5 +1,6 @@
 pub mod aliases;
 pub mod auth;
+pub mod background;
 pub mod gateway_keys;
 pub mod logging;
 pub mod openai;

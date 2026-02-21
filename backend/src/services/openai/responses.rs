@@ -79,15 +79,25 @@ impl OpenAiService {
 
         let pool = self.pool.clone();
         let provider_id = route.provider_id;
-        tokio::spawn(async move {
-            let _ = providers::increment_usage_count(&pool, provider_id).await;
-        });
+        let shutdown_token = self.background_tasks.token();
+        self.background_tasks
+            .spawn("providers.increment_usage_count", async move {
+                if shutdown_token.is_cancelled() {
+                    return;
+                }
+                let _ = providers::increment_usage_count(&pool, provider_id).await;
+            });
 
         let pool = self.pool.clone();
         let key_id = route.provider_key.id;
-        tokio::spawn(async move {
-            let _ = provider_keys::increment_usage_count(&pool, key_id).await;
-        });
+        let shutdown_token = self.background_tasks.token();
+        self.background_tasks
+            .spawn("provider_keys.increment_usage_count", async move {
+                if shutdown_token.is_cancelled() {
+                    return;
+                }
+                let _ = provider_keys::increment_usage_count(&pool, key_id).await;
+            });
 
         let logged_request_body =
             serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
@@ -158,7 +168,11 @@ impl OpenAiService {
                     );
                     let pool = self.pool.clone();
                     let key_id = route.provider_key.id;
-                    tokio::spawn(async move {
+                    let shutdown_token = self.background_tasks.token();
+                    self.background_tasks.spawn("provider_keys.disable_key", async move {
+                        if shutdown_token.is_cancelled() {
+                            return;
+                        }
                         if let Err(e) = provider_keys::update_key(
                             &pool,
                             key_id,
@@ -187,11 +201,16 @@ impl OpenAiService {
                     None,
                 );
                 let pool = self.pool.clone();
-                tokio::spawn(async move {
-                    if let Err(log_err) = logging::record_request(&pool, &context).await {
-                        tracing::error!(error = %log_err, "failed to record request log");
-                    }
-                });
+                let shutdown_token = self.background_tasks.token();
+                self.background_tasks
+                    .spawn("request_log.record_failure", async move {
+                        if shutdown_token.is_cancelled() {
+                            return;
+                        }
+                        if let Err(log_err) = logging::record_request(&pool, &context).await {
+                            tracing::error!(error = %log_err, "failed to record request log");
+                        }
+                    });
                 return Err(AppError::Internal(err.into()));
             }
         };
@@ -209,27 +228,32 @@ impl OpenAiService {
 
             let request_context = request_context.clone();
             let pool = self.pool.clone();
-            tokio::spawn(async move {
-                let response_body = response_body_rx.await.ok();
-                let (prompt_tokens, completion_tokens, total_tokens) =
-                    if let Some(body) = &response_body {
-                        extract_usage(body, request_context.api_type)
-                    } else {
-                        (None, None, None)
-                    };
+            let shutdown_token = self.background_tasks.token();
+            self.background_tasks
+                .spawn("request_log.record_stream_response", async move {
+                    if shutdown_token.is_cancelled() {
+                        return;
+                    }
+                    let response_body = response_body_rx.await.ok();
+                    let (prompt_tokens, completion_tokens, total_tokens) =
+                        if let Some(body) = &response_body {
+                            extract_usage(body, request_context.api_type)
+                        } else {
+                            (None, None, None)
+                        };
 
-                let context = request_context.build_log_context(
-                    Some(status.as_u16() as i32),
-                    response_body,
-                    response_content_type,
-                    prompt_tokens,
-                    completion_tokens,
-                    total_tokens,
-                );
-                if let Err(err) = logging::record_request(&pool, &context).await {
-                    tracing::error!(error = %err, "failed to record request log");
-                }
-            });
+                    let context = request_context.build_log_context(
+                        Some(status.as_u16() as i32),
+                        response_body,
+                        response_content_type,
+                        prompt_tokens,
+                        completion_tokens,
+                        total_tokens,
+                    );
+                    if let Err(err) = logging::record_request(&pool, &context).await {
+                        tracing::error!(error = %err, "failed to record request log");
+                    }
+                });
 
             response
         } else {
@@ -256,11 +280,16 @@ impl OpenAiService {
                 total_tokens,
             );
             let pool = self.pool.clone();
-            tokio::spawn(async move {
-                if let Err(err) = logging::record_request(&pool, &context).await {
-                    tracing::error!(error = %err, "failed to record request log");
-                }
-            });
+            let shutdown_token = self.background_tasks.token();
+            self.background_tasks
+                .spawn("request_log.record_response", async move {
+                    if shutdown_token.is_cancelled() {
+                        return;
+                    }
+                    if let Err(err) = logging::record_request(&pool, &context).await {
+                        tracing::error!(error = %err, "failed to record request log");
+                    }
+                });
 
             response
         };

@@ -161,22 +161,28 @@ fn spawn_cache_hit_log(state: &AppState, args: CacheHitLogArgs) {
         client_info,
     } = args;
     let pool = state.pool.clone();
-    tokio::spawn(async move {
-        let request_id = Uuid::now_v7();
+    let shutdown_token = state.background_tasks.token();
+    state
+        .background_tasks
+        .spawn("cache_log.record_hit", async move {
+            if shutdown_token.is_cancelled() {
+                return;
+            }
+            let request_id = Uuid::now_v7();
 
-        let cache_context = CacheLogContext {
-            request_id,
-            source_request_log_id: Some(cached.source_request_log_id),
-            gateway_key_id: Some(gateway_key_id),
-            cache_layer: cache_layer.as_str(),
-            latency_ms: Some(latency_ms),
-            client_ip: client_info.as_ref().and_then(|i| i.client_ip.clone()),
-            user_agent: client_info.as_ref().and_then(|i| i.user_agent.clone()),
-        };
-        if let Err(err) = logging::record_cache_event(&pool, &cache_context).await {
-            tracing::error!(error = %err, "failed to record cache log");
-        }
-    });
+            let cache_context = CacheLogContext {
+                request_id,
+                source_request_log_id: Some(cached.source_request_log_id),
+                gateway_key_id: Some(gateway_key_id),
+                cache_layer: cache_layer.as_str(),
+                latency_ms: Some(latency_ms),
+                client_ip: client_info.as_ref().and_then(|i| i.client_ip.clone()),
+                user_agent: client_info.as_ref().and_then(|i| i.user_agent.clone()),
+            };
+            if let Err(err) = logging::record_cache_event(&pool, &cache_context).await {
+                tracing::error!(error = %err, "failed to record cache log");
+            }
+        });
 }
 
 fn api_type_from_path(path: &str) -> Option<ApiType> {
