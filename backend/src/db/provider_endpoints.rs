@@ -4,6 +4,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use super::types::ApiType;
+use crate::error::AppResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderEndpoint {
@@ -19,7 +20,7 @@ pub struct ProviderEndpoint {
 pub async fn list_endpoints_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderEndpoint>> {
+) -> AppResult<Vec<ProviderEndpoint>> {
     let rows = sqlx::query!(
         "SELECT
             id,
@@ -60,7 +61,7 @@ pub struct CreateEndpointParams {
 pub async fn create_endpoint(
     pool: &PgPool,
     params: CreateEndpointParams,
-) -> anyhow::Result<ProviderEndpoint> {
+) -> AppResult<ProviderEndpoint> {
     let row = sqlx::query!(
         "INSERT INTO provider_endpoints (provider_id, api_type, url)
          VALUES ($1, $2::api_type, $3)
@@ -91,7 +92,7 @@ pub async fn update_endpoint(
     pool: &PgPool,
     id: Uuid,
     params: UpdateEndpointParams,
-) -> anyhow::Result<Option<ProviderEndpoint>> {
+) -> AppResult<Option<ProviderEndpoint>> {
     let row = sqlx::query!(
         "UPDATE provider_endpoints
          SET url = COALESCE($1, url),
@@ -119,7 +120,7 @@ pub async fn update_endpoint(
     }))
 }
 
-pub async fn delete_endpoint(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_endpoint(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     let result = sqlx::query!("DELETE FROM provider_endpoints WHERE id = $1", id)
         .execute(pool)
         .await?;

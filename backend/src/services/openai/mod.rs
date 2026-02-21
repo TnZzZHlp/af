@@ -45,9 +45,7 @@ impl OpenAiService {
     }
 
     pub async fn list_models(&self, provider_id: Uuid) -> AppResult<Vec<Model>> {
-        let endpoints = providers::list_endpoints_by_provider(&self.pool, provider_id)
-            .await
-            .map_err(AppError::Internal)?;
+        let endpoints = providers::list_endpoints_by_provider(&self.pool, provider_id).await?;
 
         let endpoint = endpoints
             .iter()
@@ -61,9 +59,7 @@ impl OpenAiService {
         let url = endpoint.url.clone();
         let api_type = endpoint.api_type;
 
-        let keys = providers::list_keys_by_provider(&self.pool, provider_id)
-            .await
-            .map_err(AppError::Internal)?;
+        let keys = providers::list_keys_by_provider(&self.pool, provider_id).await?;
         let key = keys
             .iter()
             .find(|k| k.enabled)

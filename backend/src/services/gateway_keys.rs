@@ -6,12 +6,13 @@ use crate::db::{
     gateway_key_models,
     gateway_keys::{self, GatewayKey},
 };
+use crate::error::AppResult;
 
 pub async fn list_gateway_keys(
     pool: &PgPool,
     page: i64,
     page_size: i64,
-) -> anyhow::Result<Vec<GatewayKey>> {
+) -> AppResult<Vec<GatewayKey>> {
     let offset = (page - 1) * page_size;
     let mut keys = gateway_keys::list_gateway_keys(pool, page_size, offset).await?;
 
@@ -58,7 +59,7 @@ pub async fn create_gateway_key(
     rate_limit_rps: Option<i32>,
     rate_limit_rpm: Option<i32>,
     allowed_models: Option<Vec<String>>,
-) -> anyhow::Result<GatewayKey> {
+) -> AppResult<GatewayKey> {
     let key = generate_random_key();
 
     let params = gateway_keys::CreateGatewayKeyParams {
@@ -78,7 +79,7 @@ pub async fn create_gateway_key(
     Ok(created)
 }
 
-pub async fn get_gateway_key(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<GatewayKey>> {
+pub async fn get_gateway_key(pool: &PgPool, id: Uuid) -> AppResult<Option<GatewayKey>> {
     let mut key = match gateway_keys::fetch_gateway_key_by_id(pool, id).await? {
         Some(key) => key,
         None => return Ok(None),
@@ -96,7 +97,7 @@ pub async fn update_gateway_key(
     rate_limit_rps: Option<i32>,
     rate_limit_rpm: Option<i32>,
     allowed_models: Option<Vec<String>>,
-) -> anyhow::Result<Option<GatewayKey>> {
+) -> AppResult<Option<GatewayKey>> {
     let params = gateway_keys::UpdateGatewayKeyParams {
         name,
         enabled,
@@ -119,6 +120,6 @@ pub async fn update_gateway_key(
     Ok(Some(key))
 }
 
-pub async fn delete_gateway_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_gateway_key(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     gateway_keys::delete_gateway_key(pool, id).await
 }

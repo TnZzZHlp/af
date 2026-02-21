@@ -3,6 +3,8 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::error::AppResult;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderKey {
     pub id: Uuid,
@@ -15,10 +17,7 @@ pub struct ProviderKey {
     pub created_at: OffsetDateTime,
 }
 
-pub async fn fetch_provider_keys(
-    pool: &PgPool,
-    provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderKey>> {
+pub async fn fetch_provider_keys(pool: &PgPool, provider_id: Uuid) -> AppResult<Vec<ProviderKey>> {
     let rows = sqlx::query!(
         "SELECT
             id,
@@ -56,7 +55,7 @@ pub async fn fetch_provider_keys(
 pub async fn list_keys_by_provider(
     pool: &PgPool,
     provider_id: Uuid,
-) -> anyhow::Result<Vec<ProviderKey>> {
+) -> AppResult<Vec<ProviderKey>> {
     let rows = sqlx::query!(
         "SELECT
             id,
@@ -96,7 +95,7 @@ pub struct CreateKeyParams {
     pub key: String,
 }
 
-pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> anyhow::Result<ProviderKey> {
+pub async fn create_key(pool: &PgPool, params: CreateKeyParams) -> AppResult<ProviderKey> {
     let row = sqlx::query!(
         "INSERT INTO provider_keys (provider_id, name, key)
          VALUES ($1, $2, $3)
@@ -128,7 +127,7 @@ pub async fn update_key(
     pool: &PgPool,
     id: Uuid,
     params: UpdateKeyParams,
-) -> anyhow::Result<Option<ProviderKey>> {
+) -> AppResult<Option<ProviderKey>> {
     let row = sqlx::query!(
         "UPDATE provider_keys
          SET name = COALESCE($1, name),
@@ -157,14 +156,14 @@ pub async fn update_key(
     }))
 }
 
-pub async fn delete_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_key(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     let result = sqlx::query!("DELETE FROM provider_keys WHERE id = $1", id)
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
 }
 
-pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> AppResult<()> {
     sqlx::query!(
         "UPDATE provider_keys SET usage_count = usage_count + 1 WHERE id = $1",
         id

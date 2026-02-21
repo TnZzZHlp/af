@@ -3,6 +3,8 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::error::AppResult;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GatewayKey {
     pub id: Uuid,
@@ -43,7 +45,7 @@ impl From<GatewayKeyRow> for GatewayKey {
     }
 }
 
-pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<Option<GatewayKey>> {
+pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> AppResult<Option<GatewayKey>> {
     let row = sqlx::query_as!(
         GatewayKeyRow,
         "SELECT id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at
@@ -58,10 +60,7 @@ pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<O
     Ok(row.map(Into::into))
 }
 
-pub async fn fetch_gateway_key_by_id(
-    pool: &PgPool,
-    id: Uuid,
-) -> anyhow::Result<Option<GatewayKey>> {
+pub async fn fetch_gateway_key_by_id(pool: &PgPool, id: Uuid) -> AppResult<Option<GatewayKey>> {
     let row = sqlx::query_as!(
         GatewayKeyRow,
         "SELECT id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at
@@ -78,7 +77,7 @@ pub async fn fetch_gateway_key_by_id(
 pub async fn fetch_limits(
     pool: &PgPool,
     gateway_key_id: Uuid,
-) -> anyhow::Result<(Option<i32>, Option<i32>)> {
+) -> AppResult<(Option<i32>, Option<i32>)> {
     let row = sqlx::query!(
         "SELECT rate_limit_rps, rate_limit_rpm
          FROM gateway_keys
@@ -100,7 +99,7 @@ pub async fn list_gateway_keys(
     pool: &PgPool,
     limit: i64,
     offset: i64,
-) -> anyhow::Result<Vec<GatewayKey>> {
+) -> AppResult<Vec<GatewayKey>> {
     let rows = sqlx::query_as!(
         GatewayKeyRow,
         "SELECT id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at
@@ -126,7 +125,7 @@ pub struct CreateGatewayKeyParams {
 pub async fn create_gateway_key(
     pool: &PgPool,
     params: CreateGatewayKeyParams,
-) -> anyhow::Result<GatewayKey> {
+) -> AppResult<GatewayKey> {
     let row = sqlx::query_as!(
         GatewayKeyRow,
         "INSERT INTO gateway_keys (name, key, rate_limit_rps, rate_limit_rpm)
@@ -154,7 +153,7 @@ pub async fn update_gateway_key(
     pool: &PgPool,
     id: Uuid,
     params: UpdateGatewayKeyParams,
-) -> anyhow::Result<Option<GatewayKey>> {
+) -> AppResult<Option<GatewayKey>> {
     let row = sqlx::query_as!(
         GatewayKeyRow,
         "UPDATE gateway_keys
@@ -176,7 +175,7 @@ pub async fn update_gateway_key(
     Ok(row.map(Into::into))
 }
 
-pub async fn delete_gateway_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_gateway_key(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     let result = sqlx::query!("DELETE FROM gateway_keys WHERE id = $1", id)
         .execute(pool)
         .await?;

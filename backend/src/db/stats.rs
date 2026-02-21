@@ -2,6 +2,8 @@ use serde::Serialize;
 use sqlx::PgPool;
 use time::OffsetDateTime;
 
+use crate::error::AppResult;
+
 #[derive(Serialize, sqlx::FromRow)]
 pub struct TimeSeriesPoint {
     #[serde(with = "time::serde::rfc3339")]
@@ -27,7 +29,7 @@ pub async fn requests_over_time(
     start: OffsetDateTime,
     end: OffsetDateTime,
     granularity_seconds: i64,
-) -> anyhow::Result<Vec<TimeSeriesPoint>> {
+) -> AppResult<Vec<TimeSeriesPoint>> {
     let rows = sqlx::query_as!(
         TimeSeriesPoint,
         r#"
@@ -53,7 +55,7 @@ pub async fn requests_by_provider(
     pool: &PgPool,
     start: OffsetDateTime,
     end: OffsetDateTime,
-) -> anyhow::Result<Vec<CategoryCount>> {
+) -> AppResult<Vec<CategoryCount>> {
     let rows = sqlx::query_as!(
         CategoryCount,
         r#"
@@ -78,7 +80,7 @@ pub async fn cache_hit_rate(
     pool: &PgPool,
     start: OffsetDateTime,
     end: OffsetDateTime,
-) -> anyhow::Result<CacheHitRateStats> {
+) -> AppResult<CacheHitRateStats> {
     let stats = sqlx::query_as::<_, CacheHitRateStats>(
         r#"
         WITH request_count AS (

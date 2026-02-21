@@ -3,6 +3,8 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::error::AppResult;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Provider {
     pub id: Uuid,
@@ -15,7 +17,7 @@ pub struct Provider {
     pub created_at: OffsetDateTime,
 }
 
-pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Provider>> {
+pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> AppResult<Option<Provider>> {
     let row = sqlx::query!(
         "SELECT id, name, description, brief, enabled, usage_count, created_at
          FROM providers
@@ -40,10 +42,7 @@ pub async fn fetch_provider_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Opt
     }))
 }
 
-pub async fn fetch_provider_by_brief(
-    pool: &PgPool,
-    brief: &str,
-) -> anyhow::Result<Option<Provider>> {
+pub async fn fetch_provider_by_brief(pool: &PgPool, brief: &str) -> AppResult<Option<Provider>> {
     let row = sqlx::query!(
         "SELECT id, name, description, brief, enabled, usage_count, created_at
          FROM providers
@@ -68,11 +67,7 @@ pub async fn fetch_provider_by_brief(
     }))
 }
 
-pub async fn list_providers(
-    pool: &PgPool,
-    page: i64,
-    page_size: i64,
-) -> anyhow::Result<Vec<Provider>> {
+pub async fn list_providers(pool: &PgPool, page: i64, page_size: i64) -> AppResult<Vec<Provider>> {
     let offset = (page - 1) * page_size;
     let rows = sqlx::query!(
         "SELECT id, name, description, brief, enabled, usage_count, created_at
@@ -107,10 +102,7 @@ pub struct CreateProviderParams {
     pub brief: Option<String>,
 }
 
-pub async fn create_provider(
-    pool: &PgPool,
-    params: CreateProviderParams,
-) -> anyhow::Result<Provider> {
+pub async fn create_provider(pool: &PgPool, params: CreateProviderParams) -> AppResult<Provider> {
     let row = sqlx::query!(
         "INSERT INTO providers (name, description, brief)
          VALUES ($1, $2, $3)
@@ -144,7 +136,7 @@ pub async fn update_provider(
     pool: &PgPool,
     id: Uuid,
     params: UpdateProviderParams,
-) -> anyhow::Result<Option<Provider>> {
+) -> AppResult<Option<Provider>> {
     let row = sqlx::query!(
         "UPDATE providers
          SET name = COALESCE($1, name),
@@ -177,14 +169,14 @@ pub async fn update_provider(
     }))
 }
 
-pub async fn delete_provider(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_provider(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     let result = sqlx::query!("DELETE FROM providers WHERE id = $1", id)
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)
 }
 
-pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> AppResult<()> {
     sqlx::query!(
         "UPDATE providers SET usage_count = usage_count + 1 WHERE id = $1",
         id

@@ -4,18 +4,19 @@ use crate::db::{
     },
     aliases::{self, Alias, CreateAliasParams, UpdateAliasParams},
 };
+use crate::error::AppResult;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-pub async fn list_aliases(pool: &PgPool, page: i64, page_size: i64) -> anyhow::Result<Vec<Alias>> {
+pub async fn list_aliases(pool: &PgPool, page: i64, page_size: i64) -> AppResult<Vec<Alias>> {
     aliases::list_aliases(pool, page, page_size).await
 }
 
-pub async fn create_alias(pool: &PgPool, name: String) -> anyhow::Result<Alias> {
+pub async fn create_alias(pool: &PgPool, name: String) -> AppResult<Alias> {
     aliases::create_alias(pool, CreateAliasParams { name }).await
 }
 
-pub async fn get_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<Alias>> {
+pub async fn get_alias(pool: &PgPool, id: Uuid) -> AppResult<Option<Alias>> {
     aliases::get_alias(pool, id).await
 }
 
@@ -24,11 +25,11 @@ pub async fn update_alias(
     id: Uuid,
     name: Option<String>,
     enabled: Option<bool>,
-) -> anyhow::Result<Option<Alias>> {
+) -> AppResult<Option<Alias>> {
     aliases::update_alias(pool, id, UpdateAliasParams { name, enabled }).await
 }
 
-pub async fn delete_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_alias(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     aliases::delete_alias(pool, id).await
 }
 
@@ -37,7 +38,7 @@ pub async fn delete_alias(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
 pub async fn fetch_all_alias_target_details(
     pool: &PgPool,
     alias_id: Uuid,
-) -> anyhow::Result<Vec<AliasTargetDetail>> {
+) -> AppResult<Vec<AliasTargetDetail>> {
     alias_targets::fetch_all_alias_target_details(pool, alias_id).await
 }
 
@@ -46,7 +47,7 @@ pub async fn create_alias_target(
     alias_id: Uuid,
     provider_id: Uuid,
     model_id: String,
-) -> anyhow::Result<AliasTarget> {
+) -> AppResult<AliasTarget> {
     alias_targets::create_alias_target(
         pool,
         CreateAliasTargetParams {
@@ -64,7 +65,7 @@ pub async fn update_alias_target(
     provider_id: Option<Uuid>,
     model_id: Option<String>,
     enabled: Option<bool>,
-) -> anyhow::Result<Option<AliasTarget>> {
+) -> AppResult<Option<AliasTarget>> {
     alias_targets::update_alias_target(
         pool,
         id,
@@ -77,6 +78,6 @@ pub async fn update_alias_target(
     .await
 }
 
-pub async fn delete_alias_target(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_alias_target(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     alias_targets::delete_alias_target(pool, id).await
 }

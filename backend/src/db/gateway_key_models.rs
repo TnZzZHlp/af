@@ -1,10 +1,9 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-pub async fn fetch_model_whitelist(
-    pool: &PgPool,
-    gateway_key_id: Uuid,
-) -> anyhow::Result<Vec<String>> {
+use crate::error::AppResult;
+
+pub async fn fetch_model_whitelist(pool: &PgPool, gateway_key_id: Uuid) -> AppResult<Vec<String>> {
     let rows = sqlx::query!(
         "SELECT model FROM gateway_key_models WHERE gateway_key_id = $1 ORDER BY model",
         gateway_key_id
@@ -24,7 +23,7 @@ pub async fn replace_model_whitelist(
     pool: &PgPool,
     gateway_key_id: Uuid,
     models: &[String],
-) -> anyhow::Result<()> {
+) -> AppResult<()> {
     let mut tx = pool.begin().await?;
 
     sqlx::query("DELETE FROM gateway_key_models WHERE gateway_key_id = $1")

@@ -3,6 +3,7 @@ use sqlx::{PgPool, QueryBuilder};
 use uuid::Uuid;
 
 use super::types::ApiType;
+use crate::error::AppResult;
 use crate::utils::request_body_hash::hash_request_body_hex;
 
 #[derive(Debug, Default)]
@@ -135,7 +136,7 @@ fn append_filters<'a>(
 pub async fn fetch_request_logs(
     pool: &PgPool,
     filter: &RequestLogFilter,
-) -> anyhow::Result<Vec<RequestLogSummary>> {
+) -> AppResult<Vec<RequestLogSummary>> {
     let mut builder = QueryBuilder::new("SELECT * FROM (");
 
     // Part 1: request_logs
@@ -217,7 +218,7 @@ pub async fn fetch_request_logs(
     Ok(logs)
 }
 
-pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> anyhow::Result<i64> {
+pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> AppResult<i64> {
     let mut builder = QueryBuilder::new("SELECT count(*) FROM (");
 
     // Part 1: request_logs
@@ -253,7 +254,7 @@ pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> any
 pub async fn fetch_request_log_detail(
     pool: &PgPool,
     request_id: Uuid,
-) -> anyhow::Result<Option<RequestLog>> {
+) -> AppResult<Option<RequestLog>> {
     let log = sqlx::query_as::<_, RequestLog>(
         r#"
         SELECT 
@@ -313,7 +314,7 @@ pub async fn fetch_request_log_detail(
     Ok(log)
 }
 
-pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyhow::Result<()> {
+pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> AppResult<()> {
     let Some(api_type) = context.api_type else {
         return Ok(());
     };
@@ -379,7 +380,7 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
 pub async fn find_cached_response(
     pool: &PgPool,
     request_body_hash: &str,
-) -> anyhow::Result<Option<CachedResponse>> {
+) -> AppResult<Option<CachedResponse>> {
     let cached = sqlx::query_as::<_, CachedResponse>(
         r#"
         SELECT

@@ -75,13 +75,7 @@ impl OpenAiService {
 
         tracing::debug!(%model, "extracted model from payload");
 
-        let route = match routing::resolve_route(&self.pool, &model, api_type).await {
-            Ok(route) => route,
-            Err(err) => match err.downcast::<AppError>() {
-                Ok(app_err) => return Err(app_err),
-                Err(other_err) => return Err(AppError::Internal(other_err)),
-            },
-        };
+        let route = routing::resolve_route(&self.pool, &model, api_type).await?;
 
         let pool = self.pool.clone();
         let provider_id = route.provider_id;

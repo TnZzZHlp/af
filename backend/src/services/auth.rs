@@ -13,6 +13,7 @@ use crate::db::{
     gateway_key_models,
     gateway_keys::{self, GatewayKey},
 };
+use crate::error::{AppError, AppResult};
 
 #[derive(Debug, Clone)]
 struct IpRecord {
@@ -69,7 +70,7 @@ pub struct Claims {
     pub exp: i64,
 }
 
-pub fn create_jwt(user_id: Uuid, secret: &str) -> anyhow::Result<String> {
+pub fn create_jwt(user_id: Uuid, secret: &str) -> AppResult<String> {
     let expiration = time::OffsetDateTime::now_utc() + time::Duration::days(7);
     let claims = Claims {
         sub: user_id.to_string(),
@@ -81,17 +82,17 @@ pub fn create_jwt(user_id: Uuid, secret: &str) -> anyhow::Result<String> {
         &claims,
         &EncodingKey::from_secret(secret.as_ref()),
     )
-    .map_err(|err| anyhow::anyhow!(err))
+    .map_err(|err| AppError::Internal(err.into()))
 }
 
-pub fn verify_jwt(token: &str, secret: &str) -> anyhow::Result<Claims> {
+pub fn verify_jwt(token: &str, secret: &str) -> AppResult<Claims> {
     decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default(),
     )
     .map(|data| data.claims)
-    .map_err(|err| anyhow::anyhow!(err))
+    .map_err(|err| AppError::Internal(err.into()))
 }
 
 pub fn extract_api_key(headers: &HeaderMap) -> Option<String> {
@@ -108,15 +109,12 @@ pub fn extract_api_key(headers: &HeaderMap) -> Option<String> {
         })
 }
 
-pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<Option<GatewayKey>> {
+pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> AppResult<Option<GatewayKey>> {
     let key = gateway_keys::fetch_gateway_key(pool, api_key).await?;
 
     Ok(key)
 }
 
-pub async fn fetch_model_whitelist(
-    pool: &PgPool,
-    gateway_key_id: Uuid,
-) -> anyhow::Result<Vec<String>> {
+pub async fn fetch_model_whitelist(pool: &PgPool, gateway_key_id: Uuid) -> AppResult<Vec<String>> {
     gateway_key_models::fetch_model_whitelist(pool, gateway_key_id).await
 }

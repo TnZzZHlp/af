@@ -1,6 +1,8 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::error::AppResult;
+
 pub struct CacheLogContext {
     pub request_id: Uuid,
     pub source_request_log_id: Option<i64>,
@@ -11,7 +13,7 @@ pub struct CacheLogContext {
     pub user_agent: Option<String>,
 }
 
-pub async fn record_cache_event(pool: &PgPool, context: &CacheLogContext) -> anyhow::Result<()> {
+pub async fn record_cache_event(pool: &PgPool, context: &CacheLogContext) -> AppResult<()> {
     let client_ip = context
         .client_ip
         .as_deref()

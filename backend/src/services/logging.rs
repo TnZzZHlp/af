@@ -5,26 +5,27 @@ use crate::db::cache_log::{self, CacheLogContext};
 use crate::db::request_logs::{
     self, CachedResponse, RequestLog, RequestLogContext, RequestLogFilter, RequestLogSummary,
 };
+use crate::error::AppResult;
 
 pub async fn fetch_request_logs(
     pool: &PgPool,
     filter: &RequestLogFilter,
-) -> anyhow::Result<Vec<RequestLogSummary>> {
+) -> AppResult<Vec<RequestLogSummary>> {
     request_logs::fetch_request_logs(pool, filter).await
 }
 
-pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> anyhow::Result<i64> {
+pub async fn count_request_logs(pool: &PgPool, filter: &RequestLogFilter) -> AppResult<i64> {
     request_logs::count_request_logs(pool, filter).await
 }
 
 pub async fn fetch_request_log_detail(
     pool: &PgPool,
     request_id: Uuid,
-) -> anyhow::Result<Option<RequestLog>> {
+) -> AppResult<Option<RequestLog>> {
     request_logs::fetch_request_log_detail(pool, request_id).await
 }
 
-pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyhow::Result<()> {
+pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> AppResult<()> {
     let Some(api_type) = context.api_type else {
         return Ok(());
     };
@@ -56,10 +57,10 @@ pub async fn record_request(pool: &PgPool, context: &RequestLogContext) -> anyho
 pub async fn find_cached_response(
     pool: &PgPool,
     request_body_hash: &str,
-) -> anyhow::Result<Option<CachedResponse>> {
+) -> AppResult<Option<CachedResponse>> {
     request_logs::find_cached_response(pool, request_body_hash).await
 }
 
-pub async fn record_cache_event(pool: &PgPool, context: &CacheLogContext) -> anyhow::Result<()> {
+pub async fn record_cache_event(pool: &PgPool, context: &CacheLogContext) -> AppResult<()> {
     cache_log::record_cache_event(pool, context).await
 }

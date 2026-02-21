@@ -5,6 +5,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::db::gateway_keys;
+use crate::error::AppResult;
 
 #[derive(Debug, Clone)]
 struct TokenBucket {
@@ -160,6 +161,6 @@ fn sanitize_limit(limit: Option<i32>) -> Option<i32> {
 pub async fn fetch_limits(
     pool: &PgPool,
     gateway_key_id: Uuid,
-) -> anyhow::Result<(Option<i32>, Option<i32>)> {
+) -> AppResult<(Option<i32>, Option<i32>)> {
     gateway_keys::fetch_limits(pool, gateway_key_id).await
 }

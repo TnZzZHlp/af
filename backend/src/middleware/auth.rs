@@ -44,7 +44,7 @@ pub async fn auth_middleware(
             state.login_protection.record_failure(&ip).await;
             return AppError::Unauthorized.into_response();
         }
-        Err(err) => return AppError::Internal(err).into_response(),
+        Err(err) => return err.into_response(),
     };
 
     let mut req = req;
@@ -52,7 +52,7 @@ pub async fn auth_middleware(
 
     let whitelist = match auth::fetch_model_whitelist(&state.pool, gateway_key.id).await {
         Ok(models) => models,
-        Err(err) => return AppError::Internal(err).into_response(),
+        Err(err) => return err.into_response(),
     };
     if whitelist.is_empty() {
         return next.run(req).await;

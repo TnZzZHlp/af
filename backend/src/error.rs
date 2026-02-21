@@ -24,6 +24,12 @@ pub enum AppError {
     Internal(#[from] anyhow::Error),
 }
 
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        Self::Internal(err.into())
+    }
+}
+
 #[derive(Serialize)]
 struct ErrorResponse {
     error: String,

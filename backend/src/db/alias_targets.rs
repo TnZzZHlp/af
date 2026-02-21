@@ -4,6 +4,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use super::types::ApiType;
+use crate::error::AppResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AliasTarget {
@@ -38,7 +39,7 @@ pub struct AliasTargetDetail {
 pub async fn fetch_all_alias_target_details(
     pool: &PgPool,
     alias_id: Uuid,
-) -> anyhow::Result<Vec<AliasTargetDetail>> {
+) -> AppResult<Vec<AliasTargetDetail>> {
     let rows = sqlx::query!(
         "SELECT
             at.id,
@@ -95,7 +96,7 @@ pub struct CreateAliasTargetParams {
 pub async fn create_alias_target(
     pool: &PgPool,
     params: CreateAliasTargetParams,
-) -> anyhow::Result<AliasTarget> {
+) -> AppResult<AliasTarget> {
     let row = sqlx::query!(
         "INSERT INTO alias_targets (alias_id, provider_id, model_id)
          VALUES ($1, $2, $3)
@@ -128,7 +129,7 @@ pub async fn update_alias_target(
     pool: &PgPool,
     id: Uuid,
     params: UpdateAliasTargetParams,
-) -> anyhow::Result<Option<AliasTarget>> {
+) -> AppResult<Option<AliasTarget>> {
     let row = sqlx::query!(
         "UPDATE alias_targets
          SET
@@ -160,7 +161,7 @@ pub async fn update_alias_target(
     }))
 }
 
-pub async fn delete_alias_target(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
+pub async fn delete_alias_target(pool: &PgPool, id: Uuid) -> AppResult<bool> {
     let result = sqlx::query!("DELETE FROM alias_targets WHERE id = $1", id)
         .execute(pool)
         .await?;
@@ -171,7 +172,7 @@ pub async fn fetch_alias_target_details(
     pool: &PgPool,
     alias_name: &str,
     api_type: ApiType,
-) -> anyhow::Result<Vec<AliasTargetDetail>> {
+) -> AppResult<Vec<AliasTargetDetail>> {
     // We join providers directly.
     // We join provider_endpoints on provider_id and api_type to find a valid endpoint.
     // We distinct on provider_id to avoid duplicates if multiple endpoints exist.
@@ -228,7 +229,7 @@ pub async fn fetch_alias_target_details(
     Ok(details)
 }
 
-pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+pub async fn increment_usage_count(pool: &PgPool, id: Uuid) -> AppResult<()> {
     sqlx::query!(
         "UPDATE alias_targets SET usage_count = usage_count + 1 WHERE id = $1",
         id

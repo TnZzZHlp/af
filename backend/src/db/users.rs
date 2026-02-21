@@ -1,6 +1,8 @@
 use sqlx::{PgPool, types::time};
 use uuid::Uuid;
 
+use crate::error::AppResult;
+
 #[derive(Debug, Clone)]
 pub struct User {
     pub id: Uuid,
@@ -11,7 +13,7 @@ pub struct User {
     pub created_at: time::OffsetDateTime,
 }
 
-pub async fn fetch_user_by_username(pool: &PgPool, username: &str) -> anyhow::Result<Option<User>> {
+pub async fn fetch_user_by_username(pool: &PgPool, username: &str) -> AppResult<Option<User>> {
     let row = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at FROM users WHERE username = $1",
         username
@@ -29,11 +31,7 @@ pub async fn fetch_user_by_username(pool: &PgPool, username: &str) -> anyhow::Re
     }))
 }
 
-pub async fn insert_user(
-    pool: &PgPool,
-    username: &str,
-    password_hash: &str,
-) -> anyhow::Result<User> {
+pub async fn insert_user(pool: &PgPool, username: &str, password_hash: &str) -> AppResult<User> {
     let row = sqlx::query!(
         "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, password_hash, password_updated_at, enabled, created_at",
         username,
@@ -56,7 +54,7 @@ pub async fn update_password_hash(
     pool: &PgPool,
     user_id: Uuid,
     password_hash: &str,
-) -> anyhow::Result<()> {
+) -> AppResult<()> {
     sqlx::query!(
         "UPDATE users SET password_hash = $1, password_updated_at = now() WHERE id = $2",
         password_hash,
@@ -68,7 +66,7 @@ pub async fn update_password_hash(
     Ok(())
 }
 
-pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<User>> {
+pub async fn list_users(pool: &PgPool) -> AppResult<Vec<User>> {
     let rows = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at
          FROM users
@@ -92,7 +90,7 @@ pub async fn list_users(pool: &PgPool) -> anyhow::Result<Vec<User>> {
     Ok(users)
 }
 
-pub async fn fetch_user_by_id(pool: &PgPool, id: Uuid) -> anyhow::Result<Option<User>> {
+pub async fn fetch_user_by_id(pool: &PgPool, id: Uuid) -> AppResult<Option<User>> {
     let row = sqlx::query!(
         "SELECT id, username, password_hash, password_updated_at, enabled, created_at
          FROM users
@@ -117,7 +115,7 @@ pub async fn update_user(
     id: Uuid,
     username: &str,
     enabled: bool,
-) -> anyhow::Result<Option<User>> {
+) -> AppResult<Option<User>> {
     let row = sqlx::query!(
         "UPDATE users
          SET username = $1, enabled = $2
@@ -140,7 +138,7 @@ pub async fn update_user(
     }))
 }
 
-pub async fn delete_user(pool: &PgPool, id: Uuid) -> anyhow::Result<()> {
+pub async fn delete_user(pool: &PgPool, id: Uuid) -> AppResult<()> {
     sqlx::query!("DELETE FROM users WHERE id = $1", id)
         .execute(pool)
         .await?;

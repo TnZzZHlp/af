@@ -44,8 +44,7 @@ pub async fn login(
         }
     };
 
-    let token = crate::services::auth::create_jwt(user.id, &state.jwt_secret)
-        .map_err(crate::error::AppError::Internal)?;
+    let token = crate::services::auth::create_jwt(user.id, &state.jwt_secret)?;
 
     let response = LoginResponse {
         id: user.id.to_string(),

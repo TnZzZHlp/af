@@ -2,12 +2,13 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 
 use crate::db::stats::{self, CacheHitRateStats, CategoryCount, TimeSeriesPoint};
+use crate::error::AppResult;
 
 pub async fn get_requests_over_time(
     pool: &PgPool,
     start: OffsetDateTime,
     end: OffsetDateTime,
-) -> anyhow::Result<Vec<TimeSeriesPoint>> {
+) -> AppResult<Vec<TimeSeriesPoint>> {
     let duration = end - start;
     let granularity_seconds = if duration <= time::Duration::days(1) {
         1800
@@ -22,7 +23,7 @@ pub async fn get_requests_by_provider(
     pool: &PgPool,
     start: OffsetDateTime,
     end: OffsetDateTime,
-) -> anyhow::Result<Vec<CategoryCount>> {
+) -> AppResult<Vec<CategoryCount>> {
     stats::requests_by_provider(pool, start, end).await
 }
 
@@ -30,6 +31,6 @@ pub async fn get_cache_hit_rate(
     pool: &PgPool,
     start: OffsetDateTime,
     end: OffsetDateTime,
-) -> anyhow::Result<CacheHitRateStats> {
+) -> AppResult<CacheHitRateStats> {
     stats::cache_hit_rate(pool, start, end).await
 }

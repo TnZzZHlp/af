@@ -55,9 +55,7 @@ impl From<User> for UserResponse {
 }
 
 pub async fn list_users(State(state): State<AppState>) -> AppResult<Json<Vec<UserResponse>>> {
-    let users = users::list_users(&state.pool)
-        .await
-        .map_err(AppError::Internal)?;
+    let users = users::list_users(&state.pool).await?;
     Ok(Json(users.into_iter().map(Into::into).collect()))
 }
 
@@ -65,9 +63,7 @@ pub async fn create_user(
     State(state): State<AppState>,
     Json(payload): Json<CreateUserRequest>,
 ) -> AppResult<Json<UserResponse>> {
-    let user = users::create_user(&state.pool, &payload.username, &payload.password)
-        .await
-        .map_err(AppError::Internal)?;
+    let user = users::create_user(&state.pool, &payload.username, &payload.password).await?;
     Ok(Json(user.into()))
 }
 
@@ -76,8 +72,7 @@ pub async fn get_user(
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<UserResponse>> {
     let user = users::get_user(&state.pool, id)
-        .await
-        .map_err(AppError::Internal)?
+        .await?
         .ok_or(AppError::NotFound)?;
     Ok(Json(user.into()))
 }
@@ -88,8 +83,7 @@ pub async fn update_user(
     Json(payload): Json<UpdateUserRequest>,
 ) -> AppResult<Json<UserResponse>> {
     let user = users::update_user(&state.pool, id, &payload.username, payload.enabled)
-        .await
-        .map_err(AppError::Internal)?
+        .await?
         .ok_or(AppError::NotFound)?;
     Ok(Json(user.into()))
 }
@@ -99,9 +93,7 @@ pub async fn update_password(
     Path(id): Path<Uuid>,
     Json(payload): Json<UpdatePasswordRequest>,
 ) -> AppResult<StatusCode> {
-    users::change_password(&state.pool, id, &payload.password)
-        .await
-        .map_err(AppError::Internal)?;
+    users::change_password(&state.pool, id, &payload.password).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -109,8 +101,6 @@ pub async fn delete_user(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AppResult<StatusCode> {
-    users::delete_user(&state.pool, id)
-        .await
-        .map_err(AppError::Internal)?;
+    users::delete_user(&state.pool, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
