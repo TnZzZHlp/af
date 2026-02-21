@@ -10,6 +10,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
+    constants::MAX_REQUEST_BODY_BYTES,
     db::{cache_log::CacheLogContext, types::ApiType},
     error::AppError,
     middleware::{auth::GatewayKeyId, request_log::ClientInfo},
@@ -19,8 +20,6 @@ use crate::{
     },
     state::AppState,
 };
-
-const MAX_CACHEABLE_REQUEST_BODY_BYTES: usize = 100 * 1024 * 1024;
 
 #[derive(Clone, Copy)]
 enum CacheLayer {
@@ -61,7 +60,7 @@ pub async fn response_cache_middleware(
 
     let start = Instant::now();
     let (parts, body) = req.into_parts();
-    let request_bytes = match body::to_bytes(body, MAX_CACHEABLE_REQUEST_BODY_BYTES).await {
+    let request_bytes = match body::to_bytes(body, MAX_REQUEST_BODY_BYTES).await {
         Ok(bytes) => bytes,
         Err(err) => {
             tracing::warn!(error = %err, "failed to read request body for cache");

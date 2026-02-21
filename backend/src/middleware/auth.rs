@@ -8,10 +8,8 @@ use axum::{
 use serde_json::Value;
 use std::net::SocketAddr;
 
-use crate::{error::AppError, services::auth, state::AppState};
+use crate::{constants::MAX_REQUEST_BODY_BYTES, error::AppError, services::auth, state::AppState};
 use uuid::Uuid;
-
-const MAX_WHITELIST_CHECK_BODY_BYTES: usize = 100 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug)]
 pub struct GatewayKeyId(pub Uuid);
@@ -58,7 +56,7 @@ pub async fn auth_middleware(
     }
 
     let (parts, body) = req.into_parts();
-    let body_bytes = match body::to_bytes(body, MAX_WHITELIST_CHECK_BODY_BYTES).await {
+    let body_bytes = match body::to_bytes(body, MAX_REQUEST_BODY_BYTES).await {
         Ok(bytes) => bytes,
         Err(_) => return AppError::BadRequest("invalid request body".to_string()).into_response(),
     };
