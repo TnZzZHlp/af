@@ -25,23 +25,14 @@ pub async fn resolve_route(
     api_type: ApiType,
 ) -> anyhow::Result<Route> {
     // 1. Check whitelist
-    let whitelist = auth::fetch_model_whitelist(pool, gateway_key_id).await?;
-    if !whitelist.is_empty() {
-        tracing::debug!(?whitelist, "checking model whitelist");
-        if !whitelist.iter().any(|entry| entry == model) {
-            tracing::debug!("model not in whitelist");
-            return Err(AppError::Forbidden("model not in whitelist".to_string()).into());
-        }
-    } else {
-        tracing::debug!("whitelist is empty, skipping check");
-    }
+    enforce_model_whitelist(pool, gateway_key_id, model).await?;
 
     // 2. Resolve target
     tracing::debug!("resolving target");
     let mut targets = Vec::new();
     let mut is_alias_match = false;
 
-    if let Some((brief, real_model)) = model.split_once(':') {
+    if let Some((brief, real_model)) = parse_provider_real_model(model) {
         tracing::debug!(
             brief,
             real_model,
@@ -130,6 +121,36 @@ pub async fn resolve_route(
         provider_key,
         alias_name: model.to_string(),
     })
+}
+
+async fn enforce_model_whitelist(
+    pool: &PgPool,
+    gateway_key_id: Uuid,
+    model: &str,
+) -> anyhow::Result<()> {
+    let whitelist = auth::fetch_model_whitelist(pool, gateway_key_id).await?;
+    if whitelist.is_empty() {
+        tracing::debug!("whitelist is empty, skipping check");
+        return Ok(());
+    }
+
+    tracing::debug!(?whitelist, %model, "checking model whitelist");
+    if whitelist.iter().any(|entry| entry == model) {
+        return Ok(());
+    }
+
+    tracing::debug!("model not in whitelist");
+    Err(AppError::Forbidden("model not in whitelist".to_string()).into())
+}
+
+fn parse_provider_real_model(model: &str) -> Option<(&str, &str)> {
+    let (brief, real_model) = model.split_once(':')?;
+    let brief = brief.trim();
+    let real_model = real_model.trim();
+    if brief.is_empty() || real_model.is_empty() {
+        return None;
+    }
+    Some((brief, real_model))
 }
 
 pub async fn fetch_alias_target_details(

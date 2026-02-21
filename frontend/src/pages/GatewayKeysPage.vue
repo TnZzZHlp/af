@@ -68,6 +68,7 @@ const form = ref({
   name: "",
   rate_limit_rps: "" as string | number,
   rate_limit_rpm: "" as string | number,
+  allowed_models: "",
 });
 
 const visibleKeys = ref<Record<string, boolean>>({});
@@ -87,6 +88,7 @@ function openCreateSheet() {
     name: "",
     rate_limit_rps: "",
     rate_limit_rpm: "",
+    allowed_models: "",
   };
   isSheetOpen.value = true;
 }
@@ -98,8 +100,18 @@ function openEditSheet(key: GatewayKey) {
     name: key.name || "",
     rate_limit_rps: key.rate_limit_rps || "",
     rate_limit_rpm: key.rate_limit_rpm || "",
+    allowed_models: key.allowed_models.join("\n"),
   };
   isSheetOpen.value = true;
+}
+
+function parseAllowedModels(input: string): string[] {
+  const parts = input
+    .split(/[\n,]/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+
+  return Array.from(new Set(parts));
 }
 
 async function handleSubmit() {
@@ -107,6 +119,7 @@ async function handleSubmit() {
     name: form.value.name || null,
     rate_limit_rps: form.value.rate_limit_rps ? Number(form.value.rate_limit_rps) : null,
     rate_limit_rpm: form.value.rate_limit_rpm ? Number(form.value.rate_limit_rpm) : null,
+    allowed_models: parseAllowedModels(form.value.allowed_models),
   };
 
   if (isEditing.value && editingId.value) {
@@ -293,6 +306,18 @@ function formatDate(dateStr: string) {
                                   'Unlimited' }}</div>
                               </div>
                             </div>
+                            <div class="mt-4 border-t pt-4 text-sm">
+                              <span class="text-muted-foreground">Allowed Models:</span>
+                              <div v-if="key.allowed_models.length > 0" class="mt-2 flex flex-wrap gap-2">
+                                <Badge v-for="model in key.allowed_models" :key="model" variant="secondary"
+                                  class="font-mono text-xs">
+                                  {{ model }}
+                                </Badge>
+                              </div>
+                              <div v-else class="font-medium mt-1">
+                                Unrestricted
+                              </div>
+                            </div>
                           </div>
                         </div>
 
@@ -329,6 +354,16 @@ function formatDate(dateStr: string) {
             <div class="grid gap-2">
               <Label for="rpm">Rate Limit (Requests Per Minute)</Label>
               <Input id="rpm" v-model="form.rate_limit_rpm" type="number" placeholder="e.g. 600" />
+            </div>
+            <div class="grid gap-2">
+              <Label for="allowed-models">Allowed Models (Optional)</Label>
+              <textarea id="allowed-models" v-model="form.allowed_models"
+                placeholder="One model per line, supports alias and provider:model format"
+                class="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"></textarea>
+              <p class="text-xs text-muted-foreground">
+                Leave empty for no restriction. Example: <code>gpt-4o-mini</code>,
+                <code>openai:gpt-4.1-mini</code>
+              </p>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">

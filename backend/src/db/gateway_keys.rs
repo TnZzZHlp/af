@@ -11,6 +11,8 @@ pub struct GatewayKey {
     pub enabled: bool,
     pub rate_limit_rps: Option<i32>,
     pub rate_limit_rpm: Option<i32>,
+    #[serde(default)]
+    pub allowed_models: Vec<String>,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }
@@ -37,6 +39,7 @@ pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<O
         enabled: row.enabled,
         rate_limit_rps: row.rate_limit_rps,
         rate_limit_rpm: row.rate_limit_rpm,
+        allowed_models: Vec::new(),
         created_at: row.created_at,
     }))
 }
@@ -65,6 +68,7 @@ pub async fn fetch_gateway_key_by_id(
         enabled: row.enabled,
         rate_limit_rps: row.rate_limit_rps,
         rate_limit_rpm: row.rate_limit_rpm,
+        allowed_models: Vec::new(),
         created_at: row.created_at,
     }))
 }
@@ -115,6 +119,7 @@ pub async fn list_gateway_keys(
             enabled: row.enabled,
             rate_limit_rps: row.rate_limit_rps,
             rate_limit_rpm: row.rate_limit_rpm,
+            allowed_models: Vec::new(),
             created_at: row.created_at,
         });
     }
@@ -152,6 +157,7 @@ pub async fn create_gateway_key(
         enabled: row.enabled,
         rate_limit_rps: row.rate_limit_rps,
         rate_limit_rpm: row.rate_limit_rpm,
+        allowed_models: Vec::new(),
         created_at: row.created_at,
     })
 }
@@ -196,6 +202,7 @@ pub async fn update_gateway_key(
         enabled: row.enabled,
         rate_limit_rps: row.rate_limit_rps,
         rate_limit_rpm: row.rate_limit_rpm,
+        allowed_models: Vec::new(),
         created_at: row.created_at,
     }))
 }

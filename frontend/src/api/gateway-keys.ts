@@ -7,6 +7,7 @@ export interface GatewayKey {
   enabled: boolean;
   rate_limit_rps: number | null;
   rate_limit_rpm: number | null;
+  allowed_models: string[];
   created_at: string;
 }
 
@@ -19,6 +20,7 @@ export interface CreateGatewayKeyRequest {
   name?: string | null;
   rate_limit_rps?: number | null;
   rate_limit_rpm?: number | null;
+  allowed_models?: string[];
 }
 
 export interface UpdateGatewayKeyRequest {
@@ -26,6 +28,7 @@ export interface UpdateGatewayKeyRequest {
   enabled?: boolean;
   rate_limit_rps: number | null;
   rate_limit_rpm: number | null;
+  allowed_models?: string[];
 }
 
 export async function listGatewayKeys(params: ListGatewayKeysParams = {}): Promise<GatewayKey[]> {

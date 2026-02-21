@@ -41,6 +41,7 @@ pub struct CreateGatewayKeyRequest {
     pub name: Option<String>,
     pub rate_limit_rps: Option<i32>,
     pub rate_limit_rpm: Option<i32>,
+    pub allowed_models: Option<Vec<String>>,
 }
 
 pub async fn create(
@@ -52,6 +53,7 @@ pub async fn create(
         payload.name,
         payload.rate_limit_rps,
         payload.rate_limit_rpm,
+        payload.allowed_models,
     )
     .await?;
     Ok(Json(key))
@@ -73,6 +75,7 @@ pub struct UpdateGatewayKeyRequest {
     pub enabled: Option<bool>,
     pub rate_limit_rps: Option<i32>,
     pub rate_limit_rpm: Option<i32>,
+    pub allowed_models: Option<Vec<String>>,
 }
 
 pub async fn update(
@@ -87,6 +90,7 @@ pub async fn update(
         payload.enabled,
         payload.rate_limit_rps,
         payload.rate_limit_rpm,
+        payload.allowed_models,
     )
     .await?
     .ok_or(AppError::NotFound)?;
