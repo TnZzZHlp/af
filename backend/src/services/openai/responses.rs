@@ -15,6 +15,7 @@ use crate::{
     error::{AppError, AppResult},
     middleware::{auth::GatewayKeyId, request_log::ClientInfo},
     services::{logging, providers, routing},
+    utils::extract_model_from_payload,
 };
 
 use super::{
@@ -70,14 +71,7 @@ impl OpenAiService {
 
         tracing::debug!(%request_id, %api_type, "received request");
 
-        let payload_object = payload
-            .as_object()
-            .ok_or_else(|| AppError::BadRequest("payload must be a JSON object".to_string()))?;
-        let model = payload_object
-            .get("model")
-            .and_then(Value::as_str)
-            .map(str::to_string)
-            .ok_or_else(|| AppError::BadRequest("model is required".to_string()))?;
+        let model = extract_model_from_payload(&payload)?;
 
         tracing::debug!(%model, "extracted model from payload");
 

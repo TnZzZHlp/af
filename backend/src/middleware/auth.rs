@@ -8,7 +8,10 @@ use axum::{
 use serde_json::Value;
 use std::net::SocketAddr;
 
-use crate::{constants::MAX_REQUEST_BODY_BYTES, error::AppError, services::auth, state::AppState};
+use crate::{
+    constants::MAX_REQUEST_BODY_BYTES, error::AppError, services::auth, state::AppState,
+    utils::extract_model_from_payload,
+};
 use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug)]
@@ -114,13 +117,5 @@ fn extract_model_for_whitelist_check(
 
     let payload: Value = serde_json::from_slice(body_bytes)
         .map_err(|_| AppError::BadRequest("invalid request body".to_string()))?;
-    let payload_object = payload
-        .as_object()
-        .ok_or_else(|| AppError::BadRequest("payload must be a JSON object".to_string()))?;
-    let model = payload_object
-        .get("model")
-        .and_then(Value::as_str)
-        .ok_or_else(|| AppError::BadRequest("model is required".to_string()))?;
-
-    Ok(model.to_string())
+    extract_model_from_payload(&payload)
 }
