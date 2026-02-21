@@ -17,8 +17,35 @@ pub struct GatewayKey {
     pub created_at: OffsetDateTime,
 }
 
+#[derive(Debug)]
+struct GatewayKeyRow {
+    id: Uuid,
+    name: Option<String>,
+    key: String,
+    enabled: bool,
+    rate_limit_rps: Option<i32>,
+    rate_limit_rpm: Option<i32>,
+    created_at: OffsetDateTime,
+}
+
+impl From<GatewayKeyRow> for GatewayKey {
+    fn from(row: GatewayKeyRow) -> Self {
+        Self {
+            id: row.id,
+            name: row.name,
+            key: row.key,
+            enabled: row.enabled,
+            rate_limit_rps: row.rate_limit_rps,
+            rate_limit_rpm: row.rate_limit_rpm,
+            allowed_models: Vec::new(),
+            created_at: row.created_at,
+        }
+    }
+}
+
 pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<Option<GatewayKey>> {
-    let row = sqlx::query!(
+    let row = sqlx::query_as!(
+        GatewayKeyRow,
         "SELECT id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at
          FROM gateway_keys
          WHERE key = $1 AND enabled = true
@@ -28,27 +55,15 @@ pub async fn fetch_gateway_key(pool: &PgPool, api_key: &str) -> anyhow::Result<O
     .fetch_optional(pool)
     .await?;
 
-    let Some(row) = row else {
-        return Ok(None);
-    };
-
-    Ok(Some(GatewayKey {
-        id: row.id,
-        name: row.name,
-        key: row.key,
-        enabled: row.enabled,
-        rate_limit_rps: row.rate_limit_rps,
-        rate_limit_rpm: row.rate_limit_rpm,
-        allowed_models: Vec::new(),
-        created_at: row.created_at,
-    }))
+    Ok(row.map(Into::into))
 }
 
 pub async fn fetch_gateway_key_by_id(
     pool: &PgPool,
     id: Uuid,
 ) -> anyhow::Result<Option<GatewayKey>> {
-    let row = sqlx::query!(
+    let row = sqlx::query_as!(
+        GatewayKeyRow,
         "SELECT id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at
          FROM gateway_keys
          WHERE id = $1",
@@ -57,20 +72,7 @@ pub async fn fetch_gateway_key_by_id(
     .fetch_optional(pool)
     .await?;
 
-    let Some(row) = row else {
-        return Ok(None);
-    };
-
-    Ok(Some(GatewayKey {
-        id: row.id,
-        name: row.name,
-        key: row.key,
-        enabled: row.enabled,
-        rate_limit_rps: row.rate_limit_rps,
-        rate_limit_rpm: row.rate_limit_rpm,
-        allowed_models: Vec::new(),
-        created_at: row.created_at,
-    }))
+    Ok(row.map(Into::into))
 }
 
 pub async fn fetch_limits(
@@ -99,7 +101,8 @@ pub async fn list_gateway_keys(
     limit: i64,
     offset: i64,
 ) -> anyhow::Result<Vec<GatewayKey>> {
-    let rows = sqlx::query!(
+    let rows = sqlx::query_as!(
+        GatewayKeyRow,
         "SELECT id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at
          FROM gateway_keys
          ORDER BY created_at DESC
@@ -110,21 +113,7 @@ pub async fn list_gateway_keys(
     .fetch_all(pool)
     .await?;
 
-    let mut keys = Vec::with_capacity(rows.len());
-    for row in rows {
-        keys.push(GatewayKey {
-            id: row.id,
-            name: row.name,
-            key: row.key,
-            enabled: row.enabled,
-            rate_limit_rps: row.rate_limit_rps,
-            rate_limit_rpm: row.rate_limit_rpm,
-            allowed_models: Vec::new(),
-            created_at: row.created_at,
-        });
-    }
-
-    Ok(keys)
+    Ok(rows.into_iter().map(Into::into).collect())
 }
 
 pub struct CreateGatewayKeyParams {
@@ -138,7 +127,8 @@ pub async fn create_gateway_key(
     pool: &PgPool,
     params: CreateGatewayKeyParams,
 ) -> anyhow::Result<GatewayKey> {
-    let row = sqlx::query!(
+    let row = sqlx::query_as!(
+        GatewayKeyRow,
         "INSERT INTO gateway_keys (name, key, rate_limit_rps, rate_limit_rpm)
          VALUES ($1, $2, $3, $4)
          RETURNING id, name, key, enabled, rate_limit_rps, rate_limit_rpm, created_at",
@@ -150,16 +140,7 @@ pub async fn create_gateway_key(
     .fetch_one(pool)
     .await?;
 
-    Ok(GatewayKey {
-        id: row.id,
-        name: row.name,
-        key: row.key,
-        enabled: row.enabled,
-        rate_limit_rps: row.rate_limit_rps,
-        rate_limit_rpm: row.rate_limit_rpm,
-        allowed_models: Vec::new(),
-        created_at: row.created_at,
-    })
+    Ok(row.into())
 }
 
 pub struct UpdateGatewayKeyParams {
@@ -174,7 +155,8 @@ pub async fn update_gateway_key(
     id: Uuid,
     params: UpdateGatewayKeyParams,
 ) -> anyhow::Result<Option<GatewayKey>> {
-    let row = sqlx::query!(
+    let row = sqlx::query_as!(
+        GatewayKeyRow,
         "UPDATE gateway_keys
          SET name = COALESCE($1, name),
              enabled = COALESCE($2, enabled),
@@ -191,20 +173,7 @@ pub async fn update_gateway_key(
     .fetch_optional(pool)
     .await?;
 
-    let Some(row) = row else {
-        return Ok(None);
-    };
-
-    Ok(Some(GatewayKey {
-        id: row.id,
-        name: row.name,
-        key: row.key,
-        enabled: row.enabled,
-        rate_limit_rps: row.rate_limit_rps,
-        rate_limit_rpm: row.rate_limit_rpm,
-        allowed_models: Vec::new(),
-        created_at: row.created_at,
-    }))
+    Ok(row.map(Into::into))
 }
 
 pub async fn delete_gateway_key(pool: &PgPool, id: Uuid) -> anyhow::Result<bool> {
