@@ -467,17 +467,18 @@ function formatDate(dateStr: string) {
                   empty-text="No model found."
                 />
               </template>
-              <template v-else>
-                <Input id="target-model-id" v-model="targetForm.model_id" placeholder="e.g. gpt-4o"
-                  :disabled="!targetForm.provider_id" />
-                <p v-if="modelsFetchFailed && targetForm.provider_id" class="text-xs text-amber-600">
-                  Could not fetch models from provider. Please enter model ID manually.
-                </p>
-                <p v-else-if="targetForm.provider_id && !loadingModels" class="text-xs text-muted-foreground">
-                  Enter the model identifier manually.
-                </p>
-                <p v-else class="text-xs text-muted-foreground">Select a provider first.</p>
-              </template>
+              <Input id="target-model-id" v-model="targetForm.model_id" placeholder="e.g. gpt-4o"
+                :disabled="!targetForm.provider_id" />
+              <p v-if="modelsFetchFailed && targetForm.provider_id" class="text-xs text-amber-600">
+                Could not fetch models from provider. Please enter model ID manually.
+              </p>
+              <p v-else-if="targetForm.provider_id && availableModels.length > 0" class="text-xs text-muted-foreground">
+                Select from the list above or enter a model ID manually.
+              </p>
+              <p v-else-if="targetForm.provider_id && !loadingModels" class="text-xs text-muted-foreground">
+                Enter the model identifier manually.
+              </p>
+              <p v-else class="text-xs text-muted-foreground">Select a provider first.</p>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">
