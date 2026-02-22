@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { HTMLAttributes } from "vue";
 import { ref, computed } from "vue";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-vue-next";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ const props = defineProps<{
   disabled?: boolean;
   loading?: boolean;
   unselectable?: boolean;
+  class?: HTMLAttributes["class"];
 }>();
 
 const emit = defineEmits<{
@@ -63,8 +65,7 @@ function handleSelect(option: ComboboxOption) {
         variant="outline"
         role="combobox"
         :aria-expanded="open"
-        class="justify-between w-full font-normal"
-        :class="cn(!modelValue && 'text-muted-foreground')"
+        :class="cn('justify-between w-full font-normal', !modelValue && 'text-muted-foreground', props.class)"
         :disabled="disabled || loading"
       >
         <span v-if="loading" class="flex items-center gap-2">
