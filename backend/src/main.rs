@@ -74,7 +74,9 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("database migrations complete");
 
     let background_tasks = BackgroundTasks::new();
-    let http_client = reqwest::Client::new();
+    let http_client = reqwest::Client::builder()
+        .user_agent(constants::UPSTREAM_USER_AGENT)
+        .build()?;
     let openai = OpenAiService::new(pool.clone(), http_client, background_tasks.clone());
     let rate_limiter = RateLimiter::new();
     let login_protection = LoginProtection::new();
