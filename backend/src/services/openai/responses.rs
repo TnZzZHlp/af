@@ -23,6 +23,26 @@ use super::{
     utils::{RequestContext, extract_usage},
 };
 
+fn prepare_request_bodies(payload: Value, routed_model_id: &str) -> AppResult<(Vec<u8>, bool)> {
+    let mut upstream_payload = payload;
+    let payload_object = upstream_payload
+        .as_object_mut()
+        .ok_or_else(|| AppError::BadRequest("payload must be a JSON object".to_string()))?;
+    payload_object.insert(
+        "model".to_string(),
+        Value::String(routed_model_id.to_string()),
+    );
+    let stream = payload_object
+        .get("stream")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+
+    let upstream_request_body =
+        serde_json::to_vec(&upstream_payload).map_err(|err| AppError::Internal(err.into()))?;
+
+    Ok((upstream_request_body, stream))
+}
+
 impl OpenAiService {
     pub async fn responses(
         &self,
@@ -57,7 +77,7 @@ impl OpenAiService {
     pub(super) async fn process_request(
         &self,
         gateway_key_id: GatewayKeyId,
-        mut payload: Value,
+        payload: Value,
         client_info: ClientInfo,
         api_type: ApiType,
     ) -> AppResult<Response<Body>> {
@@ -99,17 +119,7 @@ impl OpenAiService {
                 let _ = provider_keys::increment_usage_count(&pool, key_id).await;
             });
 
-        let logged_request_body =
-            serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
-
-        let payload_object = payload
-            .as_object_mut()
-            .ok_or_else(|| AppError::BadRequest("payload must be a JSON object".to_string()))?;
-        payload_object.insert("model".to_string(), Value::String(route.model_id.clone()));
-        let stream = payload_object
-            .get("stream")
-            .and_then(Value::as_bool)
-            .unwrap_or(false);
+        let (upstream_request_body, stream) = prepare_request_bodies(payload, &route.model_id)?;
 
         tracing::debug!(stream, "processing stream option");
 
@@ -127,11 +137,8 @@ impl OpenAiService {
             start,
             client_ip: client_ip.clone(),
             user_agent: user_agent.clone(),
-            request_body: logged_request_body,
+            request_body: upstream_request_body.clone(),
         };
-
-        let upstream_request_body =
-            serde_json::to_vec(&payload).map_err(|err| AppError::Internal(err.into()))?;
 
         tracing::debug!("sending request to upstream provider");
         let mut request_builder = self
@@ -295,5 +302,33 @@ impl OpenAiService {
         };
 
         Ok(response)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+
+    use super::prepare_request_bodies;
+
+    #[test]
+    fn prepare_request_bodies_rewrites_model_for_upstream_body() {
+        let payload = json!({
+            "model": "alias-model",
+            "input": "hello",
+            "stream": true
+        });
+
+        let (upstream_request_body, stream) =
+            prepare_request_bodies(payload, "provider-model").expect("request body should build");
+
+        let upstream_json: Value = serde_json::from_slice(&upstream_request_body)
+            .expect("upstream body should be valid JSON");
+
+        assert!(stream);
+        assert_eq!(
+            upstream_json.get("model").and_then(Value::as_str),
+            Some("provider-model")
+        );
     }
 }
