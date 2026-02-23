@@ -1,4 +1,5 @@
 mod chat;
+mod embeddings;
 mod responses;
 mod streaming;
 mod utils;

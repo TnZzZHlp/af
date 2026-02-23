@@ -67,7 +67,9 @@ pub(super) fn extract_usage(
     // Try to parse as JSON first (non-streaming)
     if let Ok(json) = serde_json::from_slice::<Value>(body) {
         match api_type {
-            ApiType::OpenAiChatCompletions | ApiType::OpenAiResponses => {
+            ApiType::OpenAiChatCompletions
+            | ApiType::OpenAiEmbeddings
+            | ApiType::OpenAiResponses => {
                 if let Some(usage) = json.get("usage") {
                     let prompt = usage
                         .get("prompt_tokens")
@@ -122,7 +124,9 @@ pub(super) fn extract_usage(
             {
                 // Same extraction logic as above
                 match api_type {
-                    ApiType::OpenAiChatCompletions | ApiType::OpenAiResponses => {
+                    ApiType::OpenAiChatCompletions
+                    | ApiType::OpenAiEmbeddings
+                    | ApiType::OpenAiResponses => {
                         let prompt = usage
                             .get("prompt_tokens")
                             .and_then(Value::as_i64)

@@ -31,6 +31,18 @@ pub async fn responses(
         .await
 }
 
+pub async fn embeddings(
+    State(state): State<AppState>,
+    gateway_key_id: GatewayKeyId,
+    Extension(client_info): Extension<ClientInfo>,
+    Json(payload): Json<Value>,
+) -> AppResult<Response<Body>> {
+    state
+        .openai
+        .embeddings(gateway_key_id, payload, client_info)
+        .await
+}
+
 pub async fn anthropic_messages(
     State(state): State<AppState>,
     gateway_key_id: GatewayKeyId,

@@ -7,6 +7,9 @@ pub enum ApiType {
     #[sqlx(rename = "openai_chat_completions")]
     #[serde(rename = "openai_chat_completions")]
     OpenAiChatCompletions,
+    #[sqlx(rename = "openai_embeddings")]
+    #[serde(rename = "openai_embeddings")]
+    OpenAiEmbeddings,
     #[sqlx(rename = "openai_responses")]
     #[serde(rename = "openai_responses")]
     OpenAiResponses,
@@ -22,6 +25,7 @@ impl std::fmt::Display for ApiType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::OpenAiChatCompletions => write!(f, "openai_chat_completions"),
+            Self::OpenAiEmbeddings => write!(f, "openai_embeddings"),
             Self::OpenAiResponses => write!(f, "openai_responses"),
             Self::OpenAiModels => write!(f, "openai_models"),
             Self::AnthropicMessages => write!(f, "anthropic_messages"),
@@ -35,6 +39,7 @@ impl std::str::FromStr for ApiType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "openai_chat_completions" => Ok(Self::OpenAiChatCompletions),
+            "openai_embeddings" => Ok(Self::OpenAiEmbeddings),
             "openai_responses" => Ok(Self::OpenAiResponses),
             "openai_models" => Ok(Self::OpenAiModels),
             "anthropic_messages" => Ok(Self::AnthropicMessages),

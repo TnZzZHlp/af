@@ -1,6 +1,6 @@
 import { requestJson } from "./client";
 
-export type ApiType = 'openai_chat_completions' | 'openai_responses' | 'openai_models' | 'anthropic_messages';
+export type ApiType = 'openai_chat_completions' | 'openai_embeddings' | 'openai_responses' | 'openai_models' | 'anthropic_messages';
 
 export interface Provider {
   id: string;

@@ -188,6 +188,7 @@ fn spawn_cache_hit_log(state: &AppState, args: CacheHitLogArgs) {
 fn api_type_from_path(path: &str) -> Option<ApiType> {
     match path {
         "/v1/chat/completions" => Some(ApiType::OpenAiChatCompletions),
+        "/v1/embeddings" => Some(ApiType::OpenAiEmbeddings),
         "/v1/responses" => Some(ApiType::OpenAiResponses),
         "/v1/messages" => Some(ApiType::AnthropicMessages),
         _ => None,

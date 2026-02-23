@@ -292,6 +292,7 @@ async function copyToClipboard(text: string, id: string) {
 function prettyApiType(apiType: string) {
   const mapping: Record<string, string> = {
     openai_chat_completions: "OpenAI Chat Completions",
+    openai_embeddings: "OpenAI Embeddings",
     openai_responses: "OpenAI Responses",
     openai_models: "OpenAI Models",
     anthropic_messages: "Anthropic Messages",
@@ -591,6 +592,7 @@ function prettyApiType(apiType: string) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="openai_chat_completions">OpenAI Chat Completions</SelectItem>
+                  <SelectItem value="openai_embeddings">OpenAI Embeddings</SelectItem>
                   <SelectItem value="openai_responses">OpenAI Responses</SelectItem>
                   <SelectItem value="openai_models">OpenAI Models</SelectItem>
                   <SelectItem value="anthropic_messages">Anthropic Messages</SelectItem>
