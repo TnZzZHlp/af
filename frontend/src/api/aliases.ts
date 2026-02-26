@@ -4,6 +4,7 @@ export interface Alias {
   id: string;
   name: string;
   enabled: boolean;
+  extra_fields: Record<string, unknown>;
   created_at: string;
 }
 
@@ -35,11 +36,13 @@ export interface ListAliasesParams {
 
 export interface CreateAliasRequest {
   name: string;
+  extra_fields?: Record<string, unknown>;
 }
 
 export interface UpdateAliasRequest {
   name?: string;
   enabled?: boolean;
+  extra_fields?: Record<string, unknown>;
 }
 
 export interface CreateAliasTargetRequest {

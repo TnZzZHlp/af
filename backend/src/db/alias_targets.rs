@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -24,6 +25,7 @@ pub struct AliasTargetDetail {
     pub alias_id: Uuid,
     pub alias_name: String,
     pub alias_target_id: Uuid,
+    pub alias_extra_fields: Value,
     pub provider_id: Uuid,
     pub provider_name: String,
     pub provider_usage_count: i64,
@@ -46,6 +48,7 @@ pub async fn fetch_all_alias_target_details(
             a.id AS alias_id,
             a.name AS alias_name,
             at.id AS alias_target_id,
+            a.extra_fields AS alias_extra_fields,
             p.id AS provider_id,
             p.name AS provider_name,
             p.usage_count AS provider_usage_count,
@@ -72,6 +75,7 @@ pub async fn fetch_all_alias_target_details(
             alias_id: row.alias_id,
             alias_name: row.alias_name,
             alias_target_id: row.alias_target_id,
+            alias_extra_fields: row.alias_extra_fields,
             provider_id: row.provider_id,
             provider_name: row.provider_name,
             provider_usage_count: row.provider_usage_count,
@@ -173,16 +177,13 @@ pub async fn fetch_alias_target_details(
     alias_name: &str,
     api_type: ApiType,
 ) -> AppResult<Vec<AliasTargetDetail>> {
-    // We join providers directly.
-    // We join provider_endpoints on provider_id and api_type to find a valid endpoint.
-    // We distinct on provider_id to avoid duplicates if multiple endpoints exist.
-    // We just pick one endpoint (e.g. max ID or whatever) since we assume any valid endpoint for the provider+api_type works.
     let rows = sqlx::query!(
         "SELECT DISTINCT ON (at.usage_count, at.id)
             at.id,
             a.id AS alias_id,
             a.name AS alias_name,
             at.id AS alias_target_id,
+            a.extra_fields AS alias_extra_fields,
             p.id AS provider_id,
             p.name AS provider_name,
             p.usage_count AS provider_usage_count,
@@ -214,6 +215,7 @@ pub async fn fetch_alias_target_details(
             alias_id: row.alias_id,
             alias_name: row.alias_name,
             alias_target_id: row.alias_target_id,
+            alias_extra_fields: row.alias_extra_fields,
             provider_id: row.provider_id,
             provider_name: row.provider_name,
             provider_usage_count: row.provider_usage_count,

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT DISTINCT ON (at.usage_count, at.id)\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            pe.id AS provider_endpoint_id,\n            pe.url AS endpoint_url,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN providers p\n           ON p.id = at.provider_id AND p.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true\n         WHERE a.name = $1 AND a.enabled = true\n         ORDER BY at.usage_count ASC, at.id",
+  "query": "SELECT DISTINCT ON (at.usage_count, at.id)\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            a.extra_fields AS alias_extra_fields,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            pe.id AS provider_endpoint_id,\n            pe.url AS endpoint_url,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id AND at.enabled = true\n         JOIN providers p\n           ON p.id = at.provider_id AND p.enabled = true\n         JOIN provider_endpoints pe\n           ON pe.provider_id = p.id AND pe.api_type = $2 AND pe.enabled = true\n         WHERE a.name = $1 AND a.enabled = true\n         ORDER BY at.usage_count ASC, at.id",
   "describe": {
     "columns": [
       {
@@ -25,46 +25,51 @@
       },
       {
         "ordinal": 4,
+        "name": "alias_extra_fields",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
         "name": "provider_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "provider_name",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "provider_usage_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "usage_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "provider_endpoint_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "endpoint_url",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "model_id",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "enabled",
         "type_info": "Bool"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -80,7 +85,8 @@
                 "openai_chat_completions",
                 "openai_responses",
                 "anthropic_messages",
-                "openai_models"
+                "openai_models",
+                "openai_embeddings"
               ]
             }
           }
@@ -100,8 +106,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "a59515e75711b14371a3e08c15ebb5f4d2bd68c8b413f9d893ea955dc4ad5440"
+  "hash": "087f996c55350e6385e4b3d67fbe2817071d438b0f0943385667cca2bef1df9a"
 }

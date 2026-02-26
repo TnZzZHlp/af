@@ -66,7 +66,10 @@ const editingAliasId = ref<string | null>(null);
 
 const aliasForm = ref({
   name: "",
+  extra_fields: "",
 });
+
+const aliasExtraFieldsError = ref<string | null>(null);
 
 // Target State
 const isTargetSheetOpen = ref(false);
@@ -122,7 +125,9 @@ function openCreateAliasSheet() {
   editingAliasId.value = null;
   aliasForm.value = {
     name: "",
+    extra_fields: "",
   };
+  aliasExtraFieldsError.value = null;
   isAliasSheetOpen.value = true;
 }
 
@@ -131,13 +136,40 @@ function openEditAliasSheet(alias: Alias) {
   editingAliasId.value = alias.id;
   aliasForm.value = {
     name: alias.name,
+    extra_fields: JSON.stringify(alias.extra_fields, null, 2),
   };
+  aliasExtraFieldsError.value = null;
   isAliasSheetOpen.value = true;
 }
 
+function parseExtraFields(): Record<string, unknown> | undefined {
+  const text = aliasForm.value.extra_fields.trim();
+  if (!text) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      aliasExtraFieldsError.value = "Extra fields must be a JSON object";
+      return undefined;
+    }
+    aliasExtraFieldsError.value = null;
+    return parsed;
+  } catch {
+    aliasExtraFieldsError.value = "Invalid JSON format";
+    return undefined;
+  }
+}
+
 async function handleAliasSubmit() {
+  const extraFields = parseExtraFields();
+  if (aliasExtraFieldsError.value) {
+    return;
+  }
+
   const payload = {
     name: aliasForm.value.name,
+    ...(extraFields !== undefined && { extra_fields: extraFields }),
   };
 
   if (isEditingAlias.value && editingAliasId.value) {
@@ -416,6 +448,19 @@ function formatDate(dateStr: string) {
               <Input id="alias-name" v-model="aliasForm.name" placeholder="e.g. gpt-4-turbo"
                 :disabled="isEditingAlias" />
               <p v-if="isEditingAlias" class="text-xs text-muted-foreground">Name cannot be changed.</p>
+            </div>
+            <div class="grid gap-2">
+              <Label for="alias-extra-fields">Extra Fields (JSON)</Label>
+              <textarea
+                id="alias-extra-fields"
+                v-model="aliasForm.extra_fields"
+                class="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                placeholder='{"enable_thinking": true, "temperature": 0.7}'
+              />
+              <p v-if="aliasExtraFieldsError" class="text-xs text-destructive">{{ aliasExtraFieldsError }}</p>
+              <p v-else class="text-xs text-muted-foreground">
+                Optional JSON object to merge into request body. Existing fields will be overridden.
+              </p>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">

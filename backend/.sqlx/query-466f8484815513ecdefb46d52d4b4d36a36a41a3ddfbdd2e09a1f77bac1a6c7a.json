@@ -24,7 +24,8 @@
                 "openai_chat_completions",
                 "openai_responses",
                 "anthropic_messages",
-                "openai_models"
+                "openai_models",
+                "openai_embeddings"
               ]
             }
           }

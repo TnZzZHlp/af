@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id\n         JOIN providers p\n           ON p.id = at.provider_id\n         WHERE a.id = $1\n         ORDER BY at.usage_count ASC, p.id",
+  "query": "SELECT\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            a.extra_fields AS alias_extra_fields,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id\n         JOIN providers p\n           ON p.id = at.provider_id\n         WHERE a.id = $1\n         ORDER BY at.usage_count ASC, p.id",
   "describe": {
     "columns": [
       {
@@ -25,36 +25,41 @@
       },
       {
         "ordinal": 4,
+        "name": "alias_extra_fields",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
         "name": "provider_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "provider_name",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "provider_usage_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "usage_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "model_id",
         "type_info": "Text"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "enabled",
         "type_info": "Bool"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -75,8 +80,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "01a97fcf06750f4f486d166739353ea00281af3535ae32959d188a19b0374def"
+  "hash": "9d76b52ce4b9837b85b01ed8b4b1ce880f7f5a18a8e9dceba0fc28257a24a88a"
 }

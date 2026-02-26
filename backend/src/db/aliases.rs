@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -10,6 +11,7 @@ pub struct Alias {
     pub id: Uuid,
     pub name: String,
     pub enabled: bool,
+    pub extra_fields: Value,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
 }
@@ -17,7 +19,7 @@ pub struct Alias {
 pub async fn list_aliases(pool: &PgPool, page: i64, page_size: i64) -> AppResult<Vec<Alias>> {
     let offset = (page - 1) * page_size;
     let rows = sqlx::query!(
-        "SELECT id, name, enabled, created_at
+        "SELECT id, name, enabled, extra_fields, created_at
          FROM aliases
          ORDER BY created_at DESC
          LIMIT $1 OFFSET $2",
@@ -33,6 +35,7 @@ pub async fn list_aliases(pool: &PgPool, page: i64, page_size: i64) -> AppResult
             id: row.id,
             name: row.name,
             enabled: row.enabled,
+            extra_fields: row.extra_fields,
             created_at: row.created_at,
         });
     }
@@ -42,7 +45,7 @@ pub async fn list_aliases(pool: &PgPool, page: i64, page_size: i64) -> AppResult
 
 pub async fn get_alias(pool: &PgPool, id: Uuid) -> AppResult<Option<Alias>> {
     let row = sqlx::query!(
-        "SELECT id, name, enabled, created_at
+        "SELECT id, name, enabled, extra_fields, created_at
          FROM aliases
          WHERE id = $1",
         id
@@ -58,20 +61,24 @@ pub async fn get_alias(pool: &PgPool, id: Uuid) -> AppResult<Option<Alias>> {
         id: row.id,
         name: row.name,
         enabled: row.enabled,
+        extra_fields: row.extra_fields,
         created_at: row.created_at,
     }))
 }
 
 pub struct CreateAliasParams {
     pub name: String,
+    pub extra_fields: Option<Value>,
 }
 
 pub async fn create_alias(pool: &PgPool, params: CreateAliasParams) -> AppResult<Alias> {
+    let extra_fields = params.extra_fields.unwrap_or(Value::Object(serde_json::Map::new()));
     let row = sqlx::query!(
-        "INSERT INTO aliases (name)
-         VALUES ($1)
-         RETURNING id, name, enabled, created_at",
-        params.name
+        "INSERT INTO aliases (name, extra_fields)
+         VALUES ($1, $2)
+         RETURNING id, name, enabled, extra_fields, created_at",
+        params.name,
+        extra_fields
     )
     .fetch_one(pool)
     .await?;
@@ -80,6 +87,7 @@ pub async fn create_alias(pool: &PgPool, params: CreateAliasParams) -> AppResult
         id: row.id,
         name: row.name,
         enabled: row.enabled,
+        extra_fields: row.extra_fields,
         created_at: row.created_at,
     })
 }
@@ -87,6 +95,7 @@ pub async fn create_alias(pool: &PgPool, params: CreateAliasParams) -> AppResult
 pub struct UpdateAliasParams {
     pub name: Option<String>,
     pub enabled: Option<bool>,
+    pub extra_fields: Option<Value>,
 }
 
 pub async fn update_alias(
@@ -97,11 +106,13 @@ pub async fn update_alias(
     let row = sqlx::query!(
         "UPDATE aliases
          SET name = COALESCE($1, name),
-             enabled = COALESCE($2, enabled)
-         WHERE id = $3
-         RETURNING id, name, enabled, created_at",
+             enabled = COALESCE($2, enabled),
+             extra_fields = COALESCE($3, extra_fields)
+         WHERE id = $4
+         RETURNING id, name, enabled, extra_fields, created_at",
         params.name,
         params.enabled,
+        params.extra_fields,
         id
     )
     .fetch_optional(pool)
@@ -115,6 +126,7 @@ pub async fn update_alias(
         id: row.id,
         name: row.name,
         enabled: row.enabled,
+        extra_fields: row.extra_fields,
         created_at: row.created_at,
     }))
 }

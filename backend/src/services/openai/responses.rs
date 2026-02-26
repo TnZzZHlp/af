@@ -23,7 +23,7 @@ use super::{
     utils::{RequestContext, extract_usage},
 };
 
-fn prepare_request_bodies(payload: Value, routed_model_id: &str) -> AppResult<(Vec<u8>, bool)> {
+fn prepare_request_bodies(payload: Value, routed_model_id: &str, extra_fields: &Value) -> AppResult<(Vec<u8>, bool)> {
     let mut upstream_payload = payload;
     let payload_object = upstream_payload
         .as_object_mut()
@@ -32,6 +32,13 @@ fn prepare_request_bodies(payload: Value, routed_model_id: &str) -> AppResult<(V
         "model".to_string(),
         Value::String(routed_model_id.to_string()),
     );
+    
+    if let Some(obj) = extra_fields.as_object() {
+        for (k, v) in obj {
+            payload_object.insert(k.clone(), v.clone());
+        }
+    }
+    
     let stream = payload_object
         .get("stream")
         .and_then(Value::as_bool)
@@ -119,7 +126,7 @@ impl OpenAiService {
                 let _ = provider_keys::increment_usage_count(&pool, key_id).await;
             });
 
-        let (upstream_request_body, stream) = prepare_request_bodies(payload, &route.model_id)?;
+        let (upstream_request_body, stream) = prepare_request_bodies(payload, &route.model_id, &route.extra_fields)?;
 
         tracing::debug!(stream, "processing stream option");
 
@@ -320,7 +327,7 @@ mod tests {
         });
 
         let (upstream_request_body, stream) =
-            prepare_request_bodies(payload, "provider-model").expect("request body should build");
+            prepare_request_bodies(payload, "provider-model", &json!({})).expect("request body should build");
 
         let upstream_json: Value = serde_json::from_slice(&upstream_request_body)
             .expect("upstream body should be valid JSON");
@@ -330,5 +337,53 @@ mod tests {
             upstream_json.get("model").and_then(Value::as_str),
             Some("provider-model")
         );
+    }
+
+    #[test]
+    fn prepare_request_bodies_merges_extra_fields() {
+        let payload = json!({
+            "model": "alias-model",
+            "messages": [{"role": "user", "content": "hello"}]
+        });
+
+        let extra_fields = json!({
+            "enable_thinking": true,
+            "temperature": 0.7
+        });
+
+        let (upstream_request_body, _) =
+            prepare_request_bodies(payload, "provider-model", &extra_fields).expect("request body should build");
+
+        let upstream_json: Value = serde_json::from_slice(&upstream_request_body)
+            .expect("upstream body should be valid JSON");
+
+        assert_eq!(
+            upstream_json.get("model").and_then(Value::as_str),
+            Some("provider-model")
+        );
+        assert_eq!(upstream_json.get("enable_thinking").and_then(Value::as_bool), Some(true));
+        assert_eq!(upstream_json.get("temperature").and_then(Value::as_f64), Some(0.7));
+    }
+
+    #[test]
+    fn prepare_request_bodies_overrides_existing_fields() {
+        let payload = json!({
+            "model": "alias-model",
+            "temperature": 0.9,
+            "enable_thinking": false
+        });
+
+        let extra_fields = json!({
+            "enable_thinking": true
+        });
+
+        let (upstream_request_body, _) =
+            prepare_request_bodies(payload, "provider-model", &extra_fields).expect("request body should build");
+
+        let upstream_json: Value = serde_json::from_slice(&upstream_request_body)
+            .expect("upstream body should be valid JSON");
+
+        assert_eq!(upstream_json.get("enable_thinking").and_then(Value::as_bool), Some(true));
+        assert_eq!(upstream_json.get("temperature").and_then(Value::as_f64), Some(0.9));
     }
 }

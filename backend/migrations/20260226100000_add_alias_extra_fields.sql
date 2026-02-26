@@ -1,0 +1,1 @@
+ALTER TABLE aliases ADD COLUMN extra_fields jsonb NOT NULL DEFAULT '{}';

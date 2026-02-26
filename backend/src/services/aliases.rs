@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 use crate::db::{
     alias_targets::{
         self, AliasTarget, AliasTargetDetail, CreateAliasTargetParams, UpdateAliasTargetParams,
@@ -12,8 +14,8 @@ pub async fn list_aliases(pool: &PgPool, page: i64, page_size: i64) -> AppResult
     aliases::list_aliases(pool, page, page_size).await
 }
 
-pub async fn create_alias(pool: &PgPool, name: String) -> AppResult<Alias> {
-    aliases::create_alias(pool, CreateAliasParams { name }).await
+pub async fn create_alias(pool: &PgPool, name: String, extra_fields: Option<Value>) -> AppResult<Alias> {
+    aliases::create_alias(pool, CreateAliasParams { name, extra_fields }).await
 }
 
 pub async fn get_alias(pool: &PgPool, id: Uuid) -> AppResult<Option<Alias>> {
@@ -25,8 +27,9 @@ pub async fn update_alias(
     id: Uuid,
     name: Option<String>,
     enabled: Option<bool>,
+    extra_fields: Option<Value>,
 ) -> AppResult<Option<Alias>> {
-    aliases::update_alias(pool, id, UpdateAliasParams { name, enabled }).await
+    aliases::update_alias(pool, id, UpdateAliasParams { name, enabled, extra_fields }).await
 }
 
 pub async fn delete_alias(pool: &PgPool, id: Uuid) -> AppResult<bool> {
