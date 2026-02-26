@@ -127,26 +127,31 @@ pub async fn response_cache_middleware(
 }
 
 async fn build_cache_key_body(state: &AppState, api_type: ApiType, request_body: &[u8]) -> Vec<u8> {
-    let Ok(payload) = serde_json::from_slice::<Value>(request_body) else {
+    let Ok(mut payload) = serde_json::from_slice::<Value>(request_body) else {
         return request_body.to_vec();
     };
     let Ok(model) = extract_model_from_payload(&payload) else {
         return request_body.to_vec();
     };
-    let Ok(routed_model_id) =
-        routing::resolve_routed_model_id_for_cache(&state.pool, &model, api_type).await
+    let Ok(targets) = routing::fetch_alias_target_details(&state.pool, &model, api_type).await
     else {
         return request_body.to_vec();
     };
+    let Some(target) = targets.first() else {
+        return request_body.to_vec();
+    };
 
-    rewrite_model_in_request_body(payload, &routed_model_id)
-        .unwrap_or_else(|| request_body.to_vec())
-}
+    let Some(obj) = payload.as_object_mut() else {
+        return request_body.to_vec();
+    };
+    obj.insert("model".to_string(), Value::String(target.model_id.clone()));
+    if let Some(extra) = target.alias_extra_fields.as_object() {
+        for (k, v) in extra {
+            obj.insert(k.clone(), v.clone());
+        }
+    }
 
-fn rewrite_model_in_request_body(mut payload: Value, model: &str) -> Option<Vec<u8>> {
-    let payload_object = payload.as_object_mut()?;
-    payload_object.insert("model".to_string(), Value::String(model.to_string()));
-    serde_json::to_vec(&payload).ok()
+    serde_json::to_vec(&payload).unwrap_or_else(|_| request_body.to_vec())
 }
 
 fn build_cached_response(cached: crate::db::request_logs::CachedResponse) -> Response<Body> {
@@ -231,28 +236,4 @@ fn is_json_content_type(content_type: Option<&header::HeaderValue>) -> bool {
 
 fn elapsed_ms(start: Instant) -> i32 {
     i32::try_from(start.elapsed().as_millis()).unwrap_or(i32::MAX)
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::{Value, json};
-
-    use super::rewrite_model_in_request_body;
-
-    #[test]
-    fn rewrite_model_in_request_body_replaces_model_field() {
-        let payload = json!({
-            "model": "alias-model",
-            "input": "hello"
-        });
-
-        let body = rewrite_model_in_request_body(payload, "provider-model")
-            .expect("body should serialize");
-        let value: Value = serde_json::from_slice(&body).expect("body should be valid json");
-
-        assert_eq!(
-            value.get("model").and_then(Value::as_str),
-            Some("provider-model")
-        );
-    }
 }

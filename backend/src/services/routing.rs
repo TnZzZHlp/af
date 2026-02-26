@@ -119,32 +119,6 @@ pub async fn resolve_route(pool: &PgPool, model: &str, api_type: ApiType) -> App
     })
 }
 
-pub async fn resolve_routed_model_id_for_cache(
-    pool: &PgPool,
-    model: &str,
-    api_type: ApiType,
-) -> AppResult<String> {
-    if let Some((brief, real_model)) = parse_provider_real_model(model)
-        && let Ok(Some(provider)) = providers::get_provider_by_brief(pool, brief).await
-    {
-        let endpoints = providers::list_endpoints_by_provider(pool, provider.id)
-            .await
-            .unwrap_or_default();
-        if endpoints
-            .into_iter()
-            .any(|endpoint| endpoint.api_type == api_type && endpoint.enabled)
-        {
-            return Ok(real_model.to_string());
-        }
-    }
-
-    let targets = fetch_alias_target_details(pool, model, api_type).await?;
-    let target = targets
-        .first()
-        .ok_or_else(|| AppError::BadRequest(format!("unknown model alias: {model}")))?;
-    Ok(target.model_id.clone())
-}
-
 fn parse_provider_real_model(model: &str) -> Option<(&str, &str)> {
     let (brief, real_model) = model.split_once(':')?;
     let brief = brief.trim();
