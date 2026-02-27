@@ -66,10 +66,7 @@ const editingAliasId = ref<string | null>(null);
 
 const aliasForm = ref({
   name: "",
-  extra_fields: "",
 });
-
-const aliasExtraFieldsError = ref<string | null>(null);
 
 // Target State
 const isTargetSheetOpen = ref(false);
@@ -83,7 +80,10 @@ const modelsFetchFailed = ref(false);
 const targetForm = ref({
   provider_id: "",
   model_id: "",
+  extra_fields: "",
 });
+
+const targetExtraFieldsError = ref<string | null>(null);
 
 const modelOptions = computed(() =>
   availableModels.value.map((m) => ({ value: m.id, label: m.id }))
@@ -125,9 +125,7 @@ function openCreateAliasSheet() {
   editingAliasId.value = null;
   aliasForm.value = {
     name: "",
-    extra_fields: "",
   };
-  aliasExtraFieldsError.value = null;
   isAliasSheetOpen.value = true;
 }
 
@@ -136,40 +134,32 @@ function openEditAliasSheet(alias: Alias) {
   editingAliasId.value = alias.id;
   aliasForm.value = {
     name: alias.name,
-    extra_fields: JSON.stringify(alias.extra_fields, null, 2),
   };
-  aliasExtraFieldsError.value = null;
   isAliasSheetOpen.value = true;
 }
 
-function parseExtraFields(): Record<string, unknown> | undefined {
-  const text = aliasForm.value.extra_fields.trim();
+function parseTargetExtraFields(): Record<string, unknown> | undefined {
+  const text = targetForm.value.extra_fields.trim();
   if (!text) {
     return undefined;
   }
   try {
     const parsed = JSON.parse(text);
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      aliasExtraFieldsError.value = "Extra fields must be a JSON object";
+      targetExtraFieldsError.value = "Extra fields must be a JSON object";
       return undefined;
     }
-    aliasExtraFieldsError.value = null;
+    targetExtraFieldsError.value = null;
     return parsed;
   } catch {
-    aliasExtraFieldsError.value = "Invalid JSON format";
+    targetExtraFieldsError.value = "Invalid JSON format";
     return undefined;
   }
 }
 
 async function handleAliasSubmit() {
-  const extraFields = parseExtraFields();
-  if (aliasExtraFieldsError.value) {
-    return;
-  }
-
   const payload = {
     name: aliasForm.value.name,
-    ...(extraFields !== undefined && { extra_fields: extraFields }),
   };
 
   if (isEditingAlias.value && editingAliasId.value) {
@@ -210,7 +200,9 @@ function openCreateTargetSheet(aliasId: string) {
   targetForm.value = {
     provider_id: "",
     model_id: "",
+    extra_fields: "",
   };
+  targetExtraFieldsError.value = null;
   isTargetSheetOpen.value = true;
 }
 
@@ -221,7 +213,9 @@ function openEditTargetSheet(aliasId: string, target: AliasTargetDetail) {
   targetForm.value = {
     provider_id: target.provider_id,
     model_id: target.model_id,
+    extra_fields: JSON.stringify(target.extra_fields, null, 2),
   };
+  targetExtraFieldsError.value = null;
   // Trigger fetch models immediately since we set provider_id
   // The watch will handle it, but since we are synchronous here, it might trigger after.
   // Actually, watch is triggered on next tick usually or if reactive value changes.
@@ -231,16 +225,21 @@ function openEditTargetSheet(aliasId: string, target: AliasTargetDetail) {
 async function handleTargetSubmit() {
   if (!currentAliasId.value) return;
 
+  const extraFields = parseTargetExtraFields();
+  if (targetExtraFieldsError.value) {
+    return;
+  }
+
+  const payload = {
+    provider_id: targetForm.value.provider_id,
+    model_id: targetForm.value.model_id,
+    ...(extraFields !== undefined && { extra_fields: extraFields }),
+  };
+
   if (isEditingTarget.value && editingTargetId.value) {
-    await store.patchTarget(currentAliasId.value, editingTargetId.value, {
-      provider_id: targetForm.value.provider_id,
-      model_id: targetForm.value.model_id,
-    });
+    await store.patchTarget(currentAliasId.value, editingTargetId.value, payload);
   } else {
-    await store.addTarget(currentAliasId.value, {
-      provider_id: targetForm.value.provider_id,
-      model_id: targetForm.value.model_id,
-    });
+    await store.addTarget(currentAliasId.value, payload);
   }
 
   if (!store.error) isTargetSheetOpen.value = false;
@@ -449,19 +448,6 @@ function formatDate(dateStr: string) {
                 :disabled="isEditingAlias" />
               <p v-if="isEditingAlias" class="text-xs text-muted-foreground">Name cannot be changed.</p>
             </div>
-            <div class="grid gap-2">
-              <Label for="alias-extra-fields">Extra Fields (JSON)</Label>
-              <textarea
-                id="alias-extra-fields"
-                v-model="aliasForm.extra_fields"
-                class="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                placeholder='{"enable_thinking": true, "temperature": 0.7}'
-              />
-              <p v-if="aliasExtraFieldsError" class="text-xs text-destructive">{{ aliasExtraFieldsError }}</p>
-              <p v-else class="text-xs text-muted-foreground">
-                Optional JSON object to merge into request body. Existing fields will be overridden.
-              </p>
-            </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">
             <Button type="submit" :disabled="store.loading" @click="handleAliasSubmit">
@@ -524,6 +510,19 @@ function formatDate(dateStr: string) {
                 Enter the model identifier manually.
               </p>
               <p v-else class="text-xs text-muted-foreground">Select a provider first.</p>
+            </div>
+            <div class="grid gap-2">
+              <Label for="target-extra-fields">Extra Fields (JSON)</Label>
+              <textarea
+                id="target-extra-fields"
+                v-model="targetForm.extra_fields"
+                class="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                placeholder='{"enable_thinking": true, "temperature": 0.7}'
+              />
+              <p v-if="targetExtraFieldsError" class="text-xs text-destructive">{{ targetExtraFieldsError }}</p>
+              <p v-else class="text-xs text-muted-foreground">
+                Optional JSON object to merge into request body. Existing fields will be overridden.
+              </p>
             </div>
           </div>
           <SheetFooter class="px-6 mt-6 flex gap-2">

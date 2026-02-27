@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            a.extra_fields AS alias_extra_fields,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id\n         JOIN providers p\n           ON p.id = at.provider_id\n         WHERE a.id = $1\n         ORDER BY at.usage_count ASC, p.id",
+  "query": "SELECT\n            at.id,\n            a.id AS alias_id,\n            a.name AS alias_name,\n            at.id AS alias_target_id,\n            at.extra_fields,\n            p.id AS provider_id,\n            p.name AS provider_name,\n            p.usage_count AS provider_usage_count,\n            at.usage_count,\n            at.model_id,\n            at.enabled,\n            at.created_at\n         FROM aliases a\n         JOIN alias_targets at\n           ON at.alias_id = a.id\n         JOIN providers p\n           ON p.id = at.provider_id\n         WHERE a.id = $1\n         ORDER BY at.usage_count ASC, p.id",
   "describe": {
     "columns": [
       {
@@ -25,7 +25,7 @@
       },
       {
         "ordinal": 4,
-        "name": "alias_extra_fields",
+        "name": "extra_fields",
         "type_info": "Jsonb"
       },
       {
@@ -84,5 +84,5 @@
       false
     ]
   },
-  "hash": "9d76b52ce4b9837b85b01ed8b4b1ce880f7f5a18a8e9dceba0fc28257a24a88a"
+  "hash": "6669c2126aa1980d204e42409963beedbd1b45100d3c9a7f00f137f697bcd9c5"
 }

@@ -43,14 +43,13 @@ pub async fn list_aliases(
 #[derive(Debug, Deserialize)]
 pub struct CreateAliasRequest {
     pub name: String,
-    pub extra_fields: Option<Value>,
 }
 
 pub async fn create_alias(
     State(state): State<AppState>,
     Json(payload): Json<CreateAliasRequest>,
 ) -> AppResult<Json<Alias>> {
-    let alias = aliases::create_alias(&state.pool, payload.name, payload.extra_fields).await?;
+    let alias = aliases::create_alias(&state.pool, payload.name).await?;
     Ok(Json(alias))
 }
 
@@ -68,7 +67,6 @@ pub async fn get_alias(
 pub struct UpdateAliasRequest {
     pub name: Option<String>,
     pub enabled: Option<bool>,
-    pub extra_fields: Option<Value>,
 }
 
 pub async fn update_alias(
@@ -81,7 +79,6 @@ pub async fn update_alias(
         id,
         payload.name,
         payload.enabled,
-        payload.extra_fields,
     )
     .await?
     .ok_or(AppError::NotFound)?;
@@ -110,6 +107,7 @@ pub async fn list_alias_target_details(
 pub struct CreateAliasTargetRequest {
     pub provider_id: Uuid,
     pub model_id: String,
+    pub extra_fields: Option<Value>,
 }
 
 pub async fn create_alias_target(
@@ -118,7 +116,7 @@ pub async fn create_alias_target(
     Json(payload): Json<CreateAliasTargetRequest>,
 ) -> AppResult<Json<AliasTarget>> {
     let target =
-        aliases::create_alias_target(&state.pool, alias_id, payload.provider_id, payload.model_id)
+        aliases::create_alias_target(&state.pool, alias_id, payload.provider_id, payload.model_id, payload.extra_fields)
             .await?;
     Ok(Json(target))
 }
@@ -128,6 +126,7 @@ pub struct UpdateAliasTargetRequest {
     pub provider_id: Option<Uuid>,
     pub model_id: Option<String>,
     pub enabled: Option<bool>,
+    pub extra_fields: Option<Value>,
 }
 
 pub async fn update_alias_target(
@@ -141,6 +140,7 @@ pub async fn update_alias_target(
         payload.provider_id,
         payload.model_id,
         payload.enabled,
+        payload.extra_fields,
     )
     .await?
     .ok_or(AppError::NotFound)?;

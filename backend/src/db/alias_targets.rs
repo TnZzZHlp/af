@@ -13,6 +13,7 @@ pub struct AliasTarget {
     pub alias_id: Uuid,
     pub provider_id: Uuid,
     pub model_id: String,
+    pub extra_fields: Value,
     pub usage_count: i64,
     pub enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
@@ -25,7 +26,7 @@ pub struct AliasTargetDetail {
     pub alias_id: Uuid,
     pub alias_name: String,
     pub alias_target_id: Uuid,
-    pub alias_extra_fields: Value,
+    pub extra_fields: Value,
     pub provider_id: Uuid,
     pub provider_name: String,
     pub provider_usage_count: i64,
@@ -48,7 +49,7 @@ pub async fn fetch_all_alias_target_details(
             a.id AS alias_id,
             a.name AS alias_name,
             at.id AS alias_target_id,
-            a.extra_fields AS alias_extra_fields,
+            at.extra_fields,
             p.id AS provider_id,
             p.name AS provider_name,
             p.usage_count AS provider_usage_count,
@@ -75,7 +76,7 @@ pub async fn fetch_all_alias_target_details(
             alias_id: row.alias_id,
             alias_name: row.alias_name,
             alias_target_id: row.alias_target_id,
-            alias_extra_fields: row.alias_extra_fields,
+            extra_fields: row.extra_fields,
             provider_id: row.provider_id,
             provider_name: row.provider_name,
             provider_usage_count: row.provider_usage_count,
@@ -95,19 +96,22 @@ pub struct CreateAliasTargetParams {
     pub alias_id: Uuid,
     pub provider_id: Uuid,
     pub model_id: String,
+    pub extra_fields: Option<Value>,
 }
 
 pub async fn create_alias_target(
     pool: &PgPool,
     params: CreateAliasTargetParams,
 ) -> AppResult<AliasTarget> {
+    let extra_fields = params.extra_fields.unwrap_or(Value::Object(serde_json::Map::new()));
     let row = sqlx::query!(
-        "INSERT INTO alias_targets (alias_id, provider_id, model_id)
-         VALUES ($1, $2, $3)
-         RETURNING id, alias_id, provider_id, model_id, usage_count, enabled, created_at",
+        "INSERT INTO alias_targets (alias_id, provider_id, model_id, extra_fields)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, alias_id, provider_id, model_id, extra_fields, usage_count, enabled, created_at",
         params.alias_id,
         params.provider_id,
-        params.model_id
+        params.model_id,
+        extra_fields
     )
     .fetch_one(pool)
     .await?;
@@ -117,6 +121,7 @@ pub async fn create_alias_target(
         alias_id: row.alias_id,
         provider_id: row.provider_id,
         model_id: row.model_id,
+        extra_fields: row.extra_fields,
         usage_count: row.usage_count,
         enabled: row.enabled,
         created_at: row.created_at,
@@ -127,6 +132,7 @@ pub struct UpdateAliasTargetParams {
     pub provider_id: Option<Uuid>,
     pub model_id: Option<String>,
     pub enabled: Option<bool>,
+    pub extra_fields: Option<Value>,
 }
 
 pub async fn update_alias_target(
@@ -139,12 +145,14 @@ pub async fn update_alias_target(
          SET
             provider_id = COALESCE($1, provider_id),
             model_id = COALESCE($2, model_id),
-            enabled = COALESCE($3, enabled)
-         WHERE id = $4
-         RETURNING id, alias_id, provider_id, model_id, usage_count, enabled, created_at",
+            enabled = COALESCE($3, enabled),
+            extra_fields = COALESCE($4, extra_fields)
+         WHERE id = $5
+         RETURNING id, alias_id, provider_id, model_id, extra_fields, usage_count, enabled, created_at",
         params.provider_id,
         params.model_id,
         params.enabled,
+        params.extra_fields,
         id
     )
     .fetch_optional(pool)
@@ -159,6 +167,7 @@ pub async fn update_alias_target(
         alias_id: row.alias_id,
         provider_id: row.provider_id,
         model_id: row.model_id,
+        extra_fields: row.extra_fields,
         usage_count: row.usage_count,
         enabled: row.enabled,
         created_at: row.created_at,
@@ -183,7 +192,7 @@ pub async fn fetch_alias_target_details(
             a.id AS alias_id,
             a.name AS alias_name,
             at.id AS alias_target_id,
-            a.extra_fields AS alias_extra_fields,
+            at.extra_fields,
             p.id AS provider_id,
             p.name AS provider_name,
             p.usage_count AS provider_usage_count,
@@ -215,7 +224,7 @@ pub async fn fetch_alias_target_details(
             alias_id: row.alias_id,
             alias_name: row.alias_name,
             alias_target_id: row.alias_target_id,
-            alias_extra_fields: row.alias_extra_fields,
+            extra_fields: row.extra_fields,
             provider_id: row.provider_id,
             provider_name: row.provider_name,
             provider_usage_count: row.provider_usage_count,

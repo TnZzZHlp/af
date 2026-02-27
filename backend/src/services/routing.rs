@@ -52,7 +52,7 @@ pub async fn resolve_route(pool: &PgPool, model: &str, api_type: ApiType) -> App
                     alias_id: Uuid::now_v7(),
                     alias_name: model.to_string(),
                     alias_target_id: Uuid::now_v7(),
-                    alias_extra_fields: Value::Object(serde_json::Map::new()),
+                    extra_fields: Value::Object(serde_json::Map::new()),
                     provider_id: provider.id,
                     provider_name: provider.name,
                     provider_usage_count: provider.usage_count,
@@ -115,7 +115,7 @@ pub async fn resolve_route(pool: &PgPool, model: &str, api_type: ApiType) -> App
         model_id: target.model_id.clone(),
         provider_key,
         alias_name: model.to_string(),
-        extra_fields: target.alias_extra_fields.clone(),
+        extra_fields: target.extra_fields.clone(),
     })
 }
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO alias_targets (alias_id, provider_id, model_id)\n         VALUES ($1, $2, $3)\n         RETURNING id, alias_id, provider_id, model_id, usage_count, enabled, created_at",
+  "query": "UPDATE alias_targets\n         SET\n            provider_id = COALESCE($1, provider_id),\n            model_id = COALESCE($2, model_id),\n            enabled = COALESCE($3, enabled),\n            extra_fields = COALESCE($4, extra_fields)\n         WHERE id = $5\n         RETURNING id, alias_id, provider_id, model_id, extra_fields, usage_count, enabled, created_at",
   "describe": {
     "columns": [
       {
@@ -25,16 +25,21 @@
       },
       {
         "ordinal": 4,
+        "name": "extra_fields",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
         "name": "usage_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "enabled",
         "type_info": "Bool"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
@@ -42,8 +47,10 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
-        "Text"
+        "Text",
+        "Bool",
+        "Jsonb",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -53,8 +60,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "9061346284a5828f38181d2e2677de1a7cc8b9175fda74695265cc9b05349953"
+  "hash": "ef4249d3ddc777a0ef3f272028f8611b6b3374ab174063fe17816035cd299994"
 }

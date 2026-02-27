@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, enabled, extra_fields, created_at\n         FROM aliases\n         ORDER BY created_at DESC\n         LIMIT $1 OFFSET $2",
+  "query": "SELECT id, name, enabled, created_at\n         FROM aliases\n         WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -20,28 +20,21 @@
       },
       {
         "ordinal": 3,
-        "name": "extra_fields",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "4a0c636db0a00797d31f726e0396dc55a15122be15336c93250434da33275d6b"
+  "hash": "da5194f14c9f671f1b9c933d12e28b62420948aa62c2accbfceffb56a996dbd8"
 }

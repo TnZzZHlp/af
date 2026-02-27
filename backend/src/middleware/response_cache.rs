@@ -145,7 +145,7 @@ async fn build_cache_key_body(state: &AppState, api_type: ApiType, request_body:
         return request_body.to_vec();
     };
     obj.insert("model".to_string(), Value::String(target.model_id.clone()));
-    if let Some(extra) = target.alias_extra_fields.as_object() {
+    if let Some(extra) = target.extra_fields.as_object() {
         for (k, v) in extra {
             obj.insert(k.clone(), v.clone());
         }
