@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { useRequestLogsStore } from "@/stores/request-logs";
 import { useAliasesStore } from "@/stores/aliases";
 import { useProvidersStore } from "@/stores/providers";
@@ -27,7 +27,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Eye, ChevronLeft, ChevronRight, RefreshCw, Copy, Check } from "lucide-vue-next";
+import { Loader2, Eye, ChevronLeft, ChevronRight, RefreshCw, Copy, Check, Play, Pause } from "lucide-vue-next";
 import type { RequestLogSummary } from "@/api/request-logs";
 import { useClipboard } from "@vueuse/core";
 import "prismjs/themes/prism-tomorrow.css";
@@ -43,6 +43,9 @@ const isDetailSheetOpen = ref(false);
 
 const limit = ref(20);
 const offset = ref(0);
+
+const autoRefresh = ref(false);
+let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
 // Track which section was just copied to show the checkmark correctly
 const copiedSection = ref<string | null>(null);
@@ -116,6 +119,23 @@ function nextPage() {
     loadLogs();
   }
 }
+
+function toggleAutoRefresh() {
+  autoRefresh.value = !autoRefresh.value;
+  if (autoRefresh.value) {
+    refreshInterval = setInterval(loadLogs, 5000);
+  } else if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+}
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+});
 </script>
 
 <template>
@@ -132,6 +152,10 @@ function nextPage() {
           Page {{ Math.floor(offset / limit) + 1 }} of {{ Math.ceil(store.total / limit) || 1 }} ({{ store.total }}
           entries)
         </span>
+        <Button variant="outline" size="icon" @click="toggleAutoRefresh" :class="{ 'bg-primary/10': autoRefresh }">
+          <Pause v-if="autoRefresh" class="h-4 w-4" />
+          <Play v-else class="h-4 w-4" />
+        </Button>
         <Button variant="outline" size="icon" @click="loadLogs" :disabled="store.isLoading">
           <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': store.isLoading }" />
         </Button>
