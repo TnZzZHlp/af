@@ -44,7 +44,7 @@ const isDetailSheetOpen = ref(false);
 const limit = ref(20);
 const offset = ref(0);
 
-const autoRefresh = ref(false);
+const autoRefresh = ref(true);
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
 // Track which section was just copied to show the checkmark correctly
@@ -62,6 +62,7 @@ onMounted(() => {
   loadLogs();
   aliasesStore.fetchAliases();
   providersStore.fetchProviders();
+  refreshInterval = setInterval(loadLogs, 5000);
 });
 
 async function loadLogs() {
