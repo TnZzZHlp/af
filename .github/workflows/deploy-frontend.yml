@@ -12,7 +12,7 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    deploy-frontend:
+    build:
         runs-on: ubuntu-latest
 
         steps:
@@ -39,6 +39,24 @@ jobs:
             - name: Build frontend
               run: cd frontend && pnpm build
 
+            - name: Upload frontend dist
+              uses: actions/upload-artifact@v4
+              with:
+                  name: frontend-dist
+                  path: frontend/dist/
+                  retention-days: 1
+
+    deploy:
+        runs-on: ubuntu-latest
+        needs: build
+
+        steps:
+            - name: Download frontend dist
+              uses: actions/download-artifact@v4
+              with:
+                  name: frontend-dist
+                  path: ./dist
+
             - name: Setup SSH
               run: |
                   mkdir -p ~/.ssh
@@ -64,7 +82,7 @@ jobs:
                   ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top_tmp && mkdir -p /www/ai.tnzzz.top_tmp"
 
                   # Upload built frontend files to temp directory
-                  scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r frontend/dist/* root@$SERVER_IP:/www/ai.tnzzz.top_tmp/
+                  scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 -r dist/* root@$SERVER_IP:/www/ai.tnzzz.top_tmp/
 
                   # Swap temp directory into place
                   ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /www/ai.tnzzz.top_prev || true && if [ -d /www/ai.tnzzz.top ]; then mv /www/ai.tnzzz.top /www/ai.tnzzz.top_prev; fi && mv /www/ai.tnzzz.top_tmp /www/ai.tnzzz.top"

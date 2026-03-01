@@ -15,7 +15,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  deploy-backend:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -46,6 +46,24 @@ jobs:
       - name: Build backend (release)
         run: cd backend && cargo build --release
 
+      - name: Upload backend binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-binary
+          path: backend/target/release/backend
+          retention-days: 1
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download backend binary
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-binary
+          path: ./backend-binary
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -72,7 +90,7 @@ jobs:
 
           # Upload backend binary to temp dir
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "rm -rf /root/github/af/.deploy_tmp_backend && mkdir -p /root/github/af/.deploy_tmp_backend"
-          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 backend/target/release/backend root@$SERVER_IP:/root/github/af/.deploy_tmp_backend/
+          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -P 9999 backend-binary/backend root@$SERVER_IP:/root/github/af/.deploy_tmp_backend/
 
           # Stop the backend service before replacing binary
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -p 9999 root@$SERVER_IP "systemctl stop af || true"
